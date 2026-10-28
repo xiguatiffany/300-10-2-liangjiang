@@ -1,0 +1,172 @@
+/* UI Foundation · /dev/design-system showcase */
+
+.ds-page {
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--on-surface);
+}
+
+.ds-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  background: color-mix(in srgb, var(--surface-container-lowest) 86%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.ds-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds-brand strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.ds-brand span {
+  font-size: 11px;
+  color: var(--outline);
+}
+
+.ds-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-body {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.ds-hero {
+  display: grid;
+  gap: 10px;
+}
+
+.ds-hero h1 {
+  font-size: 32px;
+  letter-spacing: -0.03em;
+  font-weight: var(--font-weight-bold);
+}
+
+.ds-hero p {
+  max-width: 720px;
+  color: var(--on-surface-variant);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.ds-section {
+  display: grid;
+  gap: 14px;
+}
+
+.ds-section-head h2 {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.ds-section-head p {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--outline);
+}
+
+.ds-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.ds-swatch {
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-container-lowest);
+}
+
+.ds-swatch i {
+  display: block;
+  height: 64px;
+}
+
+.ds-swatch div {
+  padding: 10px 11px 12px;
+}
+
+.ds-swatch strong {
+  display: block;
+  font-size: 12px;
+}
+
+.ds-swatch small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--outline);
+  font-family: var(--font-mono);
+}
+
+.ds-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ds-type-scale {
+  display: grid;
+  gap: 8px;
+}
+
+.ds-type-row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  background: var(--surface-container-lowest);
+}
+
+.ds-type-row em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--outline);
+  font-family: var(--font-mono);
+}
+
+.ds-density-demo {
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  background: var(--surface-container-lowest);
+  overflow: hidden;
+}
+
+.ds-density-demo .ds-density-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+}
+
+.ds-density-demo .table-count {
+  margin: 0;
+}

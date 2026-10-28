@@ -1,0 +1,7 @@
+/* UI Foundation · Reset */
+
+/* Tokens / base typography live in src/styles/foundation.css (UI Foundation).
+   This file keeps layout & page module styles; do not reintroduce :root here. */
+
+* { box-sizing: border-box; }
+

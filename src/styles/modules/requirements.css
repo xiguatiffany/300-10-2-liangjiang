@@ -1,0 +1,58 @@
+/* Module · Requirements mapping */
+
+/* ── 功能对标对表 ───────────────────────────────────────────── */
+.req-hero { display: flex; justify-content: space-between; gap: 22px; background: linear-gradient(120deg, #0d2044, #173e83 60%, #2258b8); border-radius: 16px; padding: 22px 26px; color: #fff; position: relative; overflow: hidden; }
+.req-hero::after { content: ''; position: absolute; width: 360px; height: 360px; right: -70px; top: -150px; border-radius: 50%; background: radial-gradient(circle, rgba(94,154,255,.36), transparent 68%); }
+.req-hero-left { position: relative; z-index: 2; flex: 1; max-width: 660px; }
+.req-hero h2 { font-size: 28px; color: #fff; letter-spacing: -.03em; margin-top: 8px; }
+.req-hero p { font-size: 10px; color: #b5c8e8; line-height: 1.7; margin-top: 5px; }
+.req-hero-stats { display: flex; gap: 26px; margin-top: 15px; flex-wrap: wrap; }
+.req-hero-stats div { display: flex; flex-direction: column; gap: 1px; }
+.req-hero-stats span { font-size: 7.5px; color: #9fb6d9; }
+.req-hero-stats strong { font-size: 19px; color: #fff; font-weight: 600; }
+.req-hero-right { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 430px; flex: 0 0 auto; }
+.req-arch { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 8px; }
+.req-arch span { font-size: 8px; color: #dbe8ff; background: rgba(255,255,255,.08); border-radius: 4px; padding: 3px 5px; }
+.req-arch span:last-child { background: var(--brand); color: #fff; }
+.req-arch i { font-style: normal; color: #6f8cc0; font-size: 8px; }
+.req-naming { display: flex; flex-direction: column; gap: 3px; background: rgba(3,11,27,.35); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 8px 10px; }
+.req-naming strong { font-size: 8px; color: #7fe3ce; }
+.req-naming span { font-size: 8.5px; color: #dbe8ff; }
+.req-naming em { font-style: normal; font-size: 7px; color: #8ba6ce; }
+.req-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.req-domains { display: flex; gap: 4px; flex-wrap: wrap; }
+.req-domains button { border: 1px solid #e6edf9; background: var(--surface-container-lowest); border-radius: 20px; padding: 5px 9px; font-size: 8.5px; color: #5b6c88; }
+.req-domains button.is-active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.req-domains em { font-style: normal; font-size: 7px; opacity: .75; margin-left: 3px; }
+.req-demo-toggle { height: 31px; border: 1px solid #e6edf9; background: var(--surface-container-lowest); border-radius: 6px; padding: 0 9px; font-size: 8px; color: #5b6c88; display: inline-flex; align-items: center; gap: 4px; }
+.req-demo-toggle span { color: #B91C1C; font-weight: 600; }
+.req-demo-toggle.is-on { border-color: #8db0f7; background: #f2f7ff; color: var(--blue); }
+.req-table-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; border-bottom: 1px solid var(--outline-variant); font-size: 9px; color: var(--on-surface-variant); }
+.req-table-head em { font-style: normal; color: var(--blue); margin-left: 4px; }
+.req-table-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 13px; border-top: 1px solid var(--outline-variant); font-size: 7px; color: var(--muted-2); flex-wrap: wrap; }
+.req-table-foot span { display: inline-flex; align-items: center; gap: 3px; }
+.req-map { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.req-map > span { font-size: 9px; color: var(--on-surface-variant); font-weight: 500; }
+.req-map > svg { color: #b6c4d9; }
+.req-map em { font-style: normal; font-size: 8px; color: var(--brand); background: #edf3ff; border-radius: 3px; padding: 1px 4px; }
+.req-map code { font-family: var(--mono); font-size: 6.5px; color: var(--muted-2); }
+.req-kind { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 18px; padding: 0 4px; border-radius: 4px; font-size: 7px; color: #6b7b94; background: #f3f6fb; }
+.req-kind.star { color: #B91C1C; background: #fdecef; }
+.req-kind.tri { color: #B45309; background: #fff4e3; }
+.req-rules { display: flex; flex-direction: column; gap: 9px; }
+.req-rules > div { display: flex; gap: 8px; align-items: flex-start; }
+.req-rules b { width: 22px; height: 22px; border-radius: 6px; background: #edf3ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 8px; flex: 0 0 auto; }
+.req-rules div > div { display: flex; flex-direction: column; gap: 1px; }
+.req-rules strong { font-size: 9px; color: var(--on-surface-variant); }
+.req-rules small { font-size: 8px; color: var(--muted-2); line-height: 1.5; }
+.req-bars { display: flex; flex-direction: column; gap: 10px; }
+.req-bar { height: 5px; border-radius: 3px; background: #eef3fb; overflow: hidden; }
+.req-bar i { display: block; height: 100%; background: linear-gradient(90deg,#5b8cff,var(--brand)); border-radius: 3px; }
+.req-detail-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.req-detail-naming { display: flex; flex-direction: column; gap: 2px; background: #f7faff; border: 1px solid #e3edfb; border-radius: 7px; padding: 9px 10px; }
+.req-detail-naming span { font-size: 7.5px; color: var(--muted-2); }
+.req-detail-naming strong { font-size: 10px; color: var(--on-surface); }
+.req-detail-naming em { font-style: normal; font-size: 8px; color: var(--blue); font-family: var(--mono); }
+.req-detail-text { font-size: 9px; color: #4c5d78; line-height: 1.75; margin-top: 5px; }
+@media (max-width: 1180px) { .req-hero-right { width: 360px; } .req-hero h2 { font-size: 24px; } }
+@media (max-width: 860px) { .req-hero { flex-wrap: wrap; } .req-hero-right { width: 100%; } .req-toolbar { align-items: flex-start; } }

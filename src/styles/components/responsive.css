@@ -1,0 +1,50 @@
+/* UI Foundation · Responsive shell */
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1320px) {
+  .module-tab .mt-desc { display: none; }
+  .search-box { width: 190px; }
+  .stat-grid { gap: 10px; }
+  .stat-value { font-size: 23px; }
+}
+@media (max-width: 1120px) {
+  .app-shell { grid-template-columns: 208px minmax(0, 1fr); }
+  .brand { width: 208px; flex-basis: 208px; padding: 0 14px; }
+  .sidebar-context { padding: 14px; }
+  .page-container { padding: 18px 18px 40px; }
+  .breadcrumb { padding: 0 18px; }
+  .stat-grid, .stat-grid.cols-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2-1, .grid-1-2, .grid-3-1 { grid-template-columns: minmax(0, 1fr); }
+  .module-tabs { padding: 0 8px; }
+  .module-tab { padding: 8px 9px; }
+  .module-tab .mt-label { font-size: 11.5px; }
+  .search-box { width: 160px; }
+  .search-box kbd { display: none; }
+  .user-meta { display: none; }
+}
+@media (max-width: 860px) {
+  .app-shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: fixed; left: 0; top: 64px; bottom: 0; width: 240px; transform: translateX(-100%); transition: transform .22s ease; z-index: 60; box-shadow: var(--shadow-lg); }
+  .sidebar.is-open { transform: none; }
+  .sidebar-mask { display: block; position: fixed; inset: 64px 0 0; background: rgba(15, 28, 50, .35); z-index: 55; }
+  .brand { width: auto; flex: 0 0 auto; border-right: 0; background: transparent; padding-left: 4px; }
+  .topbar { padding: 0 10px; }
+  .mobile-menu { display: block; }
+  .module-tabs { display: none; }
+  .top-actions { margin-left: auto; }
+  .global-search { display: none; }
+  .page-container { padding: 16px 14px 36px; }
+  .breadcrumb { padding: 0 14px; }
+  .page-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .page-title { font-size: 20px; }
+  .stat-grid, .stat-grid.cols-5, .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); }
+  .form-grid, .form-grid.cols-3 { grid-template-columns: minmax(0, 1fr); }
+  .form-grid .span-2, .form-grid .span-3 { grid-column: auto; }
+  .kv-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .kv-wide { grid-column: auto; }
+  .breadcrumb .crumb-right { display: none; }
+  .topo-grid { grid-template-columns: minmax(0, 1fr); }
+  .drawer { width: 100% !important; }
+}
+

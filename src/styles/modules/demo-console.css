@@ -1,0 +1,63 @@
+/* Module · Demo controller */
+
+/* ── 演示控制台 ─────────────────────────────────────────────── */
+.demo-pill { position: fixed; right: 20px; bottom: 20px; z-index: 90; display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 12px 0 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 22px; background: #0f1b33; color: #dbe8ff; box-shadow: 0 12px 30px -12px rgba(8,20,45,.6); font-size: 11px; }
+.demo-pill:hover { background: #14264a; }
+.demo-pill-ico { width: 25px; height: 25px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: #fff; }
+.demo-pill em { font-style: normal; font-size: 9px; color: #9fb6d9; }
+.demo-pill i { font-style: normal; font-family: var(--mono); font-size: 9px; color: #7fe3ce; border-left: 1px solid rgba(255,255,255,.14); padding-left: 7px; }
+.demo-panel { position: fixed; right: 20px; bottom: 20px; z-index: 91; width: 372px; max-width: calc(100vw - 24px); border-radius: 14px; overflow: hidden; background: #0d1930; color: #dbe8ff; box-shadow: 0 24px 60px -20px rgba(6,18,42,.65); border: 1px solid rgba(255,255,255,.1); }
+.demo-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 11px 12px; background: rgba(255,255,255,.035); border-bottom: 1px solid rgba(255,255,255,.08); }
+.demo-panel-brand { display: flex; align-items: center; gap: 8px; }
+.demo-panel-brand > span { width: 25px; height: 25px; border-radius: 7px; background: var(--brand); display: flex; align-items: center; justify-content: center; color: #fff; }
+.demo-panel-brand div { display: flex; flex-direction: column; gap: 1px; }
+.demo-panel-brand strong { font-size: 10.5px; color: #fff; letter-spacing: .02em; }
+.demo-panel-brand small { font-size: 7px; color: #7f98bd; letter-spacing: .12em; }
+.demo-panel-tools { display: flex; align-items: center; gap: 3px; }
+.demo-panel-tools button { height: 25px; padding: 0 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; background: transparent; color: #a7bde0; font-size: 8.5px; display: inline-flex; align-items: center; gap: 3px; }
+.demo-panel-tools button:hover, .demo-panel-tools button.is-on { background: rgba(47,99,246,.25); border-color: rgba(120,160,255,.5); color: #fff; }
+.demo-panel-progress { padding: 9px 12px 0; }
+.dpp-top { display: flex; justify-content: space-between; font-size: 8px; color: #8ba6ce; }
+.dpp-top em { font-style: normal; font-family: var(--mono); color: #7fe3ce; }
+.dpp-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,.1); margin-top: 5px; overflow: hidden; }
+.dpp-track i { display: block; height: 100%; background: linear-gradient(90deg,var(--brand),#7fe3ce); border-radius: 2px; transition: width .25s; }
+.demo-panel-current { padding: 10px 12px 8px; }
+.dpc-tags { display: flex; align-items: center; gap: 5px; }
+.dpc-id { font-family: var(--mono); font-size: 7.5px; color: #8ba6ce; background: rgba(255,255,255,.06); border-radius: 3px; padding: 1px 4px; }
+.dpc-time { font-size: 7.5px; color: #7f98bd; margin-left: auto; }
+.demo-panel-current h3 { font-size: 16px; color: #fff; margin: 7px 0 6px; letter-spacing: -.01em; }
+.demo-panel-current ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.demo-panel-current li { position: relative; padding-left: 11px; font-size: 9px; line-height: 1.55; color: #b5c8e8; }
+.demo-panel-current li::before { content: ''; position: absolute; left: 0; top: 6px; width: 3px; height: 3px; border-radius: 50%; background: var(--brand); }
+.demo-panel-actions { display: flex; gap: 5px; padding: 8px 12px 9px; border-top: 1px solid rgba(255,255,255,.08); }
+.demo-panel-actions button { height: 29px; padding: 0 8px; border: 1px solid rgba(255,255,255,.14); border-radius: 6px; background: rgba(255,255,255,.04); color: #c3d4f1; font-size: 9px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.demo-panel-actions button:hover { background: rgba(255,255,255,.1); }
+.demo-panel-actions button:disabled { opacity: .35; }
+.demo-panel-actions button.primary { flex: 1; background: var(--brand); border-color: var(--brand); color: #fff; }
+.demo-panel-actions button.primary:hover { background: #2456d8; }
+.demo-panel-foot { display: flex; gap: 10px; padding: 6px 12px 8px; background: rgba(0,0,0,.16); font-size: 7px; color: #7f98bd; }
+.demo-panel-foot kbd { font-family: var(--mono); font-size: 6.5px; background: rgba(255,255,255,.1); border-radius: 2px; padding: 1px 3px; color: #a7bde0; }
+
+/* 投影模式：放大字号、行高，减少后排看不清的问题 */
+body.presentation-mode .page-container { padding: 22px 26px 56px; }
+body.presentation-mode .page-title { font-size: 28px; }
+body.presentation-mode .page-desc { font-size: 13px; line-height: 1.75; max-width: 1000px; }
+body.presentation-mode .card-title { font-size: 15px; }
+body.presentation-mode .card-sub { font-size: 11px; }
+body.presentation-mode .stat-value { font-size: 32px; }
+body.presentation-mode .stat-label { font-size: 11.5px; }
+body.presentation-mode .data-table th { font-size: 10px; padding-top: 9px; padding-bottom: 9px; }
+body.presentation-mode .data-table td { font-size: 10px; padding-top: 10px; padding-bottom: 10px; }
+body.presentation-mode .cell-main strong { font-size: 10.5px; }
+body.presentation-mode .cell-main small { font-size: 8.5px; }
+body.presentation-mode .nav-item { font-size: 13.5px; height: 37px; }
+body.presentation-mode .nav-group-title { font-size: 10px; }
+body.presentation-mode .sidebar-context > strong { font-size: 13.5px; }
+body.presentation-mode .module-tab .mt-label { font-size: 13px; }
+body.presentation-mode .breadcrumb { font-size: 10px; }
+body.presentation-mode .muted, body.presentation-mode .xs { font-size: 9px; }
+body.presentation-mode .chart-headline strong { font-size: 27px; }
+@media (max-width: 700px) { .demo-panel { left: 12px; right: 12px; bottom: 12px; width: auto; } .demo-pill { right: 12px; bottom: 12px; } }
+
+.test-error { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: #B91C1C; background: #fdf0f2; border: 1px solid #f3c8d0; border-radius: 6px; padding: 4px 7px; }
+

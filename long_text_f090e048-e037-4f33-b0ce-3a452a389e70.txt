@@ -1,0 +1,435 @@
+我建议这次直接按照正式产品级 Design System 重构来做，而不是简单整理 CSS。
+
+结合你现在的 Next.js + Tailwind CSS v4 + shadcn/ui，以及 DataFactory、数据治理、数据中台等业务模块，我建议采用一个原则：
+
+保留现有界面和类名，逐步替换底层设计系统。先解决全局问题，再拆分文件，最后实现主题和组件标准化。
+
+这样既能提高代码质量，又不需要把已经开发的页面推倒重做。
+
+# 一、整体实施方案
+
+Design Tokens
+
+品牌色 · 语义色 · 字体 · 间距 · 圆角 · 阴影 · 动画
+
+Themes
+
+Light / Dark / Institution
+
+Density
+
+Compact / Comfortable
+
+UI Components
+
+shadcn/ui · Button · Input · Table · Dialog · Sidebar
+
+DataFactory
+
+数据治理
+
+数据中台
+
+模型训练
+
+可信查询
+
+系统管理
+
+建议把这套设计系统命名为 `UI Foundation`，作为整个产品前端的公共基础设施。
+
+## 二、推荐的代码目录
+
+不要急着引入 Monorepo 或独立 npm 包。你目前可以先在 Next.js 项目内部完成模块化。
+
+```
+front/
+├── app/
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── ...
+│
+├── styles/
+│   ├── tokens/
+│   │   ├── colors.css
+│   │   ├── typography.css
+│   │   ├── spacing.css
+│   │   └── motion.css
+│   │
+│   ├── themes/
+│   │   ├── light.css
+│   │   ├── dark.css
+│   │   └── institution.css
+│   │
+│   ├── density/
+│   │   ├── compact.css
+│   │   └── comfortable.css
+│   │
+│   ├── base/
+│   │   ├── typography.css
+│   │   └── accessibility.css
+│   │
+│   ├── components/
+│   │   ├── buttons.css
+│   │   ├── forms.css
+│   │   ├── tables.css
+│   │   └── panels.css
+│   │
+│   ├── modules/
+│   │   ├── factory.css
+│   │   ├── world-model.css
+│   │   └── dsp.css
+│   │
+│   └── theme-bridge.css
+│
+├── components/
+│   ├── ui/                 # shadcn/ui
+│   ├── shared/             # 通用业务组件
+│   └── layout/             # 平台布局组件
+│
+├── providers/
+│   └── appearance-provider.tsx
+│
+└── lib/
+    └── design-system/
+        └── tokens.ts
+```
+
+这里最重要的是区分三种东西：
+
+- Tokens：定义视觉规则，例如品牌色、正文颜色和圆角。
+- Components：实现可复用的按钮、表格、抽屉等。
+- Modules：只保留某个业务页面独有的布局与特效。
+
+后续多个独立项目确实需要共享时，再把 `styles`、`components/ui` 和公共业务组件提取成内部包。
+
+# 三、第一阶段：先修复全局设计系统
+
+这一阶段最关键，建议优先实施。
+
+## 1. 统一品牌色和语义色
+
+新建 `styles/tokens/colors.css`。
+
+```
+:root {
+  /* Brand */
+  --brand: #6755f5;
+  --brand-rgb: 103, 85, 245;
+  --brand-dark: #5140d9;
+  --brand-light: #9587ff;
+  --brand-soft: #f3f1ff;
+  --brand-hover: var(--brand-dark);
+
+  /* Surfaces */
+  --surface: #f8fafc;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f1f5f9;
+  --surface-container: #eef2f7;
+  --surface-container-high: #e2e8f0;
+
+  /* Text */
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+  --text-tertiary: #64748b;
+
+  /* Border */
+  --outline: #64748b;
+  --outline-variant: #cbd5e1;
+  --border: #e2e8f0;
+
+  /* Semantic */
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+
+  --success-container: #d1fae5;
+  --warning-container: #fef3c7;
+  --error-container: #fee2e2;
+
+  /* Primary mapping */
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-container: var(--brand-light);
+  --ring: var(--brand);
+
+  /* shadcn */
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --card: var(--surface-container-lowest);
+  --card-foreground: var(--on-surface);
+  --sidebar: var(--card);
+  --sidebar-primary: var(--primary);
+}
+```
+
+这只是核心 Token 的示例，不能直接替换你现有的全部 `:root`。原文件中还有 `--brand-fixed`、`--event-*`、`--on-primary-*` 等变量，需要保留并逐步映射。
+
+尤其要注意：现有主题切换机制必须保留兼容性，不能因为整理变量导致组件颜色丢失。
+
+## 2. 建立真正的字体体系
+
+你的 MiSans 可以继续使用，但建议改为以下规则：
+
+```
+:root {
+  --font-sans:
+    "MiSans VF",
+    "PingFang SC",
+    "HarmonyOS Sans SC",
+    "Microsoft YaHei",
+    sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-kpi: 32px;
+}
+```
+
+然后移除：
+
+```
+html * {
+  font-weight: 400 !important;
+}
+```
+
+同时移除 `@theme inline` 中把全部字体权重强制映射到 `400` 的声明，让 Tailwind 的 `font-medium`、`font-semibold` 恢复正常行为。
+
+注意不要直接批量改变现有页面的字重。可以先在新组件中使用规范字体，再逐步调整旧组件，避免页面突然变得很粗。
+
+## 3. 统一 Tailwind v4 与 shadcn/ui
+
+保留 Tailwind v4 的 `@theme inline`，但只在这个位置建立 Tailwind 与 CSS Token 的映射。
+
+```
+@theme inline {
+  --color-brand: var(--brand);
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --font-sans: var(--font-sans);
+}
+```
+
+你的现有 `@theme inline` 已经包含更多变量，不要用这段直接覆盖。这里表达的是统一映射方式。
+
+另外，我建议不要把 `--radius-sm: var(--radius-sm)` 这类同名自引用写法继续保留在 `@theme inline` 中。应当使用独立的基础变量，例如：
+
+```
+:root {
+  --radius-base: 10px;
+  --radius-card-base: 12px;
+}
+
+@theme inline {
+  --radius-md: var(--radius-base);
+  --radius-lg: var(--radius-card-base);
+}
+```
+
+这样可以避免变量解析上的歧义。
+
+# 四、第二阶段：实现主题切换
+
+你现在使用紫色品牌体系，可以保持不变。
+
+我建议建立三种主题维度，而不是把所有变化都放在 `.dark` 里。
+
+| 主题维度 | 可选项                   | 作用         |
+| ---- | --------------------- | ---------- |
+| 颜色模式 | Light / Dark          | 控制背景、文字、边框 |
+| 品牌主题 | Default / Institution | 控制品牌色      |
+| 信息密度 | Compact / Comfortable | 控制组件大小和间距  |
+
+这样后续可以组合出不同界面，而不需要维护多份 CSS。
+
+## 1. 颜色模式
+
+新建 `styles/themes/dark.css`：
+
+```
+.dark {
+  --brand: #7b71ec;
+  --brand-hover: #a59ef2;
+
+  --surface: #020617;
+  --surface-container-lowest: #0f172a;
+  --surface-container-low: #1e293b;
+  --surface-container: #1e293b;
+  --surface-container-high: #334155;
+
+  --on-surface: #f1f5f9;
+  --on-surface-variant: #94a3b8;
+
+  --border: #1e293b;
+
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --card: var(--surface-container-lowest);
+  --card-foreground: var(--on-surface);
+
+  --sidebar: var(--card);
+  --sidebar-primary: var(--brand);
+  --primary: var(--brand);
+  --ring: var(--brand);
+}
+```
+
+这里需要特别检查你原来的 DSP 页面，因为 `.dsp-app__main`、`.dsp-portal__nav` 等存在固定浅色背景。
+
+建议把它们逐步替换为主题变量。
+
+## 2. 信息密度模式
+
+这是我认为你这套系统非常值得增加的能力。
+
+密度模式示例
+
+紧凑舒适
+
+数据资产
+
+共 3 条记录
+
+| 资产名称   | 类型    | 状态  |
+| ------ | ----- | --- |
+| 门诊就诊记录 | 结构化   | 正常  |
+| 医学影像数据 | DICOM | 正常  |
+| 电子病历文档 | 非结构化  | 待处理 |
+
+切换上方模式，可查看表格行距变化。实际项目中还可以同步调整按钮、表单、卡片和筛选栏。
+
+实现方式：
+
+```
+:root,
+[data-density="comfortable"] {
+  --control-height: 36px;
+  --table-cell-py: 12px;
+  --card-padding: 20px;
+  --layout-gap: 16px;
+}
+
+[data-density="compact"] {
+  --control-height: 32px;
+  --table-cell-py: 7px;
+  --card-padding: 14px;
+  --layout-gap: 10px;
+}
+```
+
+页面只需要切换：
+
+```
+<div data-density="compact">
+  <DataTable />
+</div>
+```
+
+组件内部读取这些 CSS 变量即可。
+
+这里建议把密度变量应用在公共组件上，而不是全局覆盖所有元素的 `height` 或 `padding`。
+
+# 五、第三阶段：安全拆分现有 globals.css
+
+这是最容易出问题的一步。
+
+不要先把 4000 行代码剪切到不同文件，然后直接运行。 因为你的 CSS 存在多个作用域和覆盖关系，拆分顺序可能改变最终样式。
+
+建议采用渐进式迁移。
+
+### 第一步：保留旧文件
+
+```
+cp front/app/globals.css front/app/globals.legacy.css
+```
+
+在完成迁移前，原文件始终作为回退基线。
+
+### 第二步：按照现有 CSS 区块提取
+
+| 原有内容                     | 新文件                       |
+| ------------------------ | ------------------------- |
+| `:root` 品牌与语义变量          | `tokens/colors.css`       |
+| 字体和字号定义                  | `tokens/typography.css`   |
+| `@theme inline`          | `theme-bridge.css`        |
+| `.panel`、`.btn`、`.input` | `components/`             |
+| `.factory-*`             | `modules/factory.css`     |
+| `.world-model-*`         | `modules/world-model.css` |
+| `.dsp-*`                 | `modules/dsp.css`         |
+| `.dark`                  | `themes/dark.css`         |
+| 动画与 keyframes            | 对应模块或 `tokens/motion.css` |
+
+拆分时先原样移动，暂时不要同时重命名所有类名。
+
+### 第三步：统一 CSS 入口
+
+迁移完成后，`app/globals.css` 可以简化为：
+
+```
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens */
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/typography.css";
+@import "../styles/tokens/spacing.css";
+@import "../styles/tokens/motion.css";
+
+/* Themes */
+@import "../styles/themes/dark.css";
+@import "../styles/themes/institution.css";
+
+/* Density */
+@import "../styles/density/compact.css";
+@import "../styles/density/comfortable.css";
+
+/* Tailwind theme */
+@import "../styles/theme-bridge.css";
+
+/* Base and components */
+@import "../styles/base/typography.css";
+@import "../styles/base/accessibility.css";
+@import "../styles/components/buttons.css";
+@import "../styles/components/forms.css";
+@import "../styles/components/tables.css";
+@import "../styles/components/panels.css";
+
+/* Business modules */
+@import "../styles/modules/factory.css";
+@import "../styles/modules/world-model.css";
+@import "../styles/modules/dsp.css";
+```
+
+这是一份目标结构示例。实际执行时，应当确认 Tailwind/PostCSS 对导入顺序的处理，并检查是否有同名选择器覆盖。
+
+# 六、第四阶段：建立可视化组件规范页
+
+我建议在 Next.js 中专门增加一个开发页面：
+
+`/dev/design-system`
+
+它不面向正式用户，而是让开发人员集中查看所有 UI 组件。

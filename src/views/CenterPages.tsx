@@ -1,0 +1,12 @@
+export { CenterDashboard } from './center/Dashboard';
+export { AssetsPage, SourcesPage, MetadataPage } from './center/Assets';
+export { QualityOverview, QualityRules, QualityIssues } from './center/Quality';
+export { StandardsPage, DomainsPage } from './center/Standards';
+export { StandardsManageHubPage } from './center/StandardsManageHub';
+export { MetadataManageHubPage } from './center/MetadataManageHub';
+export { MasterDataHubPage } from './center/MasterDataHub';
+export { MpiHubPage } from './center/MpiHub';
+export { QualityControlHubPage } from './center/QualityControlHub';
+export { SqlPage, DatasetsPage, DevPage, ReportPage } from './center/Explore';
+export { IndicatorsPage, IndicatorDetail, SubscriptionsPage, TagsPage, GraphPage, ModelsPage } from './center/Indicators';
+export { MarketplacePage } from './center/Marketplace';

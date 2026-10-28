@@ -1,0 +1,87 @@
+/* Module · Collection wizard React Flow canvas */
+
+/* ── 采集方案拖拽画布（React Flow） ─────────────────────────── */
+.flow-guide { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--surface-container-lowest); border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 9px; color: var(--muted); box-shadow: var(--shadow-sm); }
+.flow-guide span { display: inline-flex; align-items: center; gap: 4px; }
+.flow-guide b { width: 17px; height: 17px; border-radius: 50%; background: #edf3ff; color: var(--blue); display: inline-flex; align-items: center; justify-content: center; font-size: 8px; }
+.flow-guide i { font-style: normal; color: #b6c4d9; }
+.flow-guide em { margin-left: auto; font-style: normal; display: inline-flex; align-items: center; gap: 4px; color: var(--blue); font-size: 8.5px; }
+.flow-layout { display: grid; grid-template-columns: 165px minmax(0, 1fr) 290px; gap: 12px; align-items: start; }
+.flow-palette { background: var(--surface-container-lowest); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); padding: 9px; position: sticky; top: 50px; }
+.fp-head { display: flex; justify-content: space-between; align-items: center; padding: 2px 3px 8px; border-bottom: 1px solid var(--outline-variant); }
+.fp-head span { font-size: 10px; color: var(--on-surface-variant); font-weight: 600; }
+.fp-head em { font-style: normal; font-size: 7.5px; color: var(--muted-2); }
+.fp-group { font-size: 7.5px; letter-spacing: .1em; color: var(--muted-2); padding: 9px 4px 4px; }
+.fp-item { display: flex; align-items: center; gap: 6px; border: 1px solid var(--outline-variant); background: var(--surface-container-lowest); border-radius: 7px; padding: 7px; margin-bottom: 5px; cursor: grab; transition: .14s; }
+.fp-item:hover { border-color: #bcd2f7; background: #f6faff; }
+.fp-item:active { cursor: grabbing; }
+.fp-icon { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.fp-icon.tone-blue { background: #edf3ff; color: var(--brand); } .fp-icon.tone-cyan { background: #e9f9fb; color: #0E7490; } .fp-icon.tone-violet { background: #f1eeff; color: var(--brand); } .fp-icon.tone-amber { background: #fff5e6; color: #B45309; } .fp-icon.tone-green { background: #e9f9f3; color: #047857; }
+.fp-item div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fp-item strong { font-size: 8.5px; color: var(--on-surface-variant); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-item small { font-size: 7px; color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-item > svg { color: #b6c4d9; }
+.fp-tip { display: flex; gap: 5px; margin-top: 9px; padding: 7px; background: var(--surface-container-low); border: 1px solid #e3edfb; border-radius: 6px; font-size: 7.5px; color: var(--muted-2); line-height: 1.45; }
+.fp-tip svg { color: var(--blue); flex: 0 0 auto; }
+.flow-canvas-wrap { height: 555px; background: var(--surface-container-lowest); border: 1px solid #dfe8f5; border-radius: 11px; overflow: hidden; box-shadow: var(--shadow); }
+.flow-canvas-wrap .react-flow { background: var(--surface-container-lowest); }
+.react-flow__controls { box-shadow: 0 2px 8px rgba(20,45,90,.08); border: 1px solid #e6eef9; border-radius: 7px; overflow: hidden; }
+.react-flow__controls-button { border-bottom: 1px solid var(--outline-variant); background: var(--surface-container-lowest); width: 24px; height: 24px; }
+.react-flow__controls-button svg { fill: #5b6c88; }
+.react-flow__minimap { border: 1px solid #e6eef9; border-radius: 6px; overflow: hidden; }
+.react-flow__attribution { display: none; }
+.react-flow__edge-path { stroke: #9db8df; stroke-width: 1.5; }
+.react-flow__edge.animated .react-flow__edge-path { stroke-dasharray: 5; animation: dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -10; } }
+.flow-canvas-actions { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.9); border: 1px solid #e6eef9; border-radius: 6px; padding: 4px 6px; font-size: 7.5px; color: var(--muted-2); }
+.flow-canvas-actions span { display: inline-flex; align-items: center; gap: 4px; }
+.flow-canvas-actions span i { width: 5px; height: 5px; border-radius: 50%; background: #059669; }
+.flow-canvas-actions button { border: 0; background: none; color: var(--blue); font-size: 7.5px; display: inline-flex; align-items: center; gap: 3px; }
+.rf-node { width: 200px; background: var(--surface-container-lowest); border: 1px solid #dfe8f5; border-radius: 9px; box-shadow: 0 4px 12px -6px rgba(20,45,90,.18); padding: 8px 9px 7px; font-size: 8px; transition: box-shadow .15s, border-color .15s; }
+.rf-node.is-selected { border-color: #6f95f8; box-shadow: 0 0 0 2px rgba(47,99,246,.15), 0 8px 20px -10px rgba(20,45,90,.4); }
+.rf-node-head { display: flex; align-items: center; gap: 7px; }
+.rf-node-icon { width: 27px; height: 27px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.rf-node-icon.tone-blue { background: #edf3ff; color: var(--brand); } .rf-node-icon.tone-cyan { background: #e9f9fb; color: #0E7490; } .rf-node-icon.tone-violet { background: #f1eeff; color: var(--brand); } .rf-node-icon.tone-amber { background: #fff5e6; color: #B45309; } .rf-node-icon.tone-green { background: #e9f9f3; color: #047857; }
+.rf-node-head > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.rf-node-head strong { font-size: 9px; color: var(--on-surface); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rf-node-head small { font-size: 6.5px; color: var(--muted-2); }
+.rf-node-head em { font-style: normal; font-size: 6.5px; border-radius: 3px; padding: 1px 4px; flex: 0 0 auto; }
+.rf-node-head em.ok { color: #047857; background: #e9f9f3; } .rf-node-head em.warn { color: #B45309; background: #fff5e6; }
+.rf-node-body { display: flex; justify-content: space-between; align-items: center; gap: 5px; border-top: 1px dashed var(--outline-variant); margin-top: 6px; padding-top: 5px; }
+.rf-node-body code { font-size: 6.5px; color: var(--brand); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rf-node-body span { font-size: 6.5px; color: var(--muted-2); white-space: nowrap; }
+.rf-node-foot { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: 6px; color: var(--muted-2); }
+.rf-node-foot span { display: inline-flex; align-items: center; gap: 2px; }
+.rf-source { border-left: 3px solid var(--brand); } .rf-transform { border-left: 3px solid #9587FF; } .rf-sink { border-left: 3px solid #059669; }
+.rf-handle { width: 7px !important; height: 7px !important; background: #7fa8e8 !important; border: 1.5px solid #fff !important; }
+.flow-config { position: sticky; top: 50px; }
+.fc-node-name { display: flex; align-items: center; gap: 7px; background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); border-radius: 7px; padding: 7px; margin-bottom: 9px; }
+.fc-node-name > div { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.fc-node-name strong { font-size: 9px; color: var(--on-surface-variant); }
+.fc-node-name small { font-size: 7px; color: var(--muted-2); font-family: var(--mono); }
+.flow-config .field { margin-bottom: 8px; }
+.flow-config .input, .flow-config .select { height: 28px; font-size: 9px; }
+.fc-map { display: flex; flex-direction: column; gap: 3px; }
+.fc-map span { font-family: var(--mono); font-size: 7px; color: #5b6c88; background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: 3px; padding: 2px 4px; }
+.fc-tip { display: flex; gap: 5px; margin-top: 8px; padding: 6px; background: var(--surface-container-low); border-radius: 5px; font-size: 7px; color: var(--muted-2); line-height: 1.45; }
+.fc-tip svg { color: var(--blue); flex: 0 0 auto; }
+.ingest-result { display: flex; flex-direction: column; gap: 6px; }
+.ingest-result > div { display: flex; align-items: center; gap: 6px; }
+.ingest-result div > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ingest-result strong { font-size: 8px; color: var(--on-surface-variant); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ingest-result small { font-size: 7px; color: var(--muted-2); }
+.ingest-tabs { display: flex; align-items: center; gap: 3px; padding: 7px 12px; border-bottom: 1px solid var(--outline-variant); flex-wrap: wrap; }
+.ingest-tabs > button { border: 0; background: none; border-radius: 5px; padding: 4px 8px; font-size: 9px; color: var(--muted); }
+.ingest-tabs > button.is-active { color: var(--blue); background: #edf3ff; font-weight: 500; }
+.ingest-tables { margin-left: auto; display: flex; gap: 3px; flex-wrap: wrap; }
+.ingest-tables button { border: 1px solid #e6eef9; background: var(--surface-container-lowest); border-radius: 4px; padding: 3px 5px; font-size: 7px; color: #5b6c88; font-family: var(--mono); }
+.ingest-tables button.is-active { border-color: #9dbcf5; color: var(--blue); background: #f2f7ff; }
+.ingest-tables em { font-style: normal; color: var(--muted-2); margin-left: 3px; }
+.ingest-summary { display: grid; grid-template-columns: repeat(3, 1fr) repeat(2, 1.4fr); gap: 8px; padding: 4px 0 10px; }
+.ingest-summary > div { background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); border-radius: 6px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px; }
+.ingest-summary span { font-size: 7px; color: var(--muted-2); }
+.ingest-summary strong { font-size: 11px; color: var(--on-surface-variant); }
+.ingest-summary em { font-style: normal; font-size: 7px; color: var(--muted-2); }
+@media (max-width: 1280px) { .flow-layout { grid-template-columns: 155px minmax(0, 1fr) 270px; } .rf-node { width: 200px; } }
+@media (max-width: 1080px) { .flow-layout { grid-template-columns: 1fr; } .flow-palette, .flow-config { position: static; } .flow-palette { display: flex; flex-wrap: wrap; gap: 5px; } .flow-palette .fp-head, .flow-palette .fp-tip { width: 100%; } .flow-palette .fp-group { width: 100%; } .fp-item { flex: 0 0 160px; } .flow-canvas-wrap { height: 480px; } }
+

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+out/
+.data/
+.npm-cache/
+.chrome*
+.DS_Store
+__pycache__/
+*.tsbuildinfo
+

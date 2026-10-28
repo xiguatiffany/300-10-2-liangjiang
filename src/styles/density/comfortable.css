@@ -1,0 +1,17 @@
+/* UI Foundation · Comfortable Density (default) */
+
+:root,
+[data-density="comfortable"] {
+  --control-height: 36px;
+  --control-height-sm: 30px;
+  --control-height-lg: 40px;
+  --table-cell-py: 12px;
+  --table-cell-px: 12px;
+  --card-padding: 20px;
+  --layout-gap: 16px;
+  --page-padding-x: 24px;
+  --page-padding-y: 22px;
+  --nav-item-height: 34px;
+  --btn-font-size: 12px;
+  --btn-font-size-sm: 11px;
+}

@@ -1,0 +1,73 @@
+/* ==========================================================================
+   UI Foundation · single entry
+   tokens → themes → density → bridge → base → components → modules → skin
+   Do not import styles.css / bid.css separately; they are deprecated stubs.
+   ========================================================================== */
+
+/* Design tokens */
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/motion.css";
+
+/* Themes */
+@import "./themes/dark.css";
+@import "./themes/institution.css";
+
+/* Density */
+@import "./density/comfortable.css";
+@import "./density/compact.css";
+
+/* Alias bridge for legacy var(--blue) etc. */
+@import "./theme-bridge.css";
+
+/* Base */
+@import "./base/reset.css";
+@import "./base/typography.css";
+@import "./base/accessibility.css";
+
+/* Components (shared UI primitives) */
+@import "./components/shell-primitives.css";
+@import "./components/buttons.css";
+@import "./components/cards-layout.css";
+@import "./components/stats.css";
+@import "./components/badges.css";
+@import "./components/tabs.css";
+@import "./components/tables.css";
+@import "./components/forms.css";
+@import "./components/overlays.css";
+@import "./components/charts.css";
+@import "./components/toast.css";
+@import "./components/responsive.css";
+@import "./components/panels.css";
+
+/* Platform modules */
+@import "./modules/dashboard.css";
+@import "./modules/assets.css";
+@import "./modules/quality.css";
+@import "./modules/sql-workbench.css";
+@import "./modules/datasets.css";
+@import "./modules/indicators.css";
+@import "./modules/marketplace.css";
+@import "./modules/collection.css";
+@import "./modules/admin.css";
+@import "./modules/responsive-pages.css";
+@import "./modules/lakehouse.css";
+@import "./modules/qc.css";
+
+/* Bid / portal modules */
+@import "./modules/portal.css";
+@import "./modules/demo-list.css";
+@import "./modules/bid-collection.css";
+@import "./modules/bid-assets.css";
+@import "./modules/bid-responsive.css";
+@import "./modules/demo-console.css";
+@import "./modules/database-layer.css";
+@import "./modules/wizard-canvas.css";
+@import "./modules/data-query.css";
+@import "./modules/requirements.css";
+
+/* Applied skin + appearance + design-system showcase */
+@import "./modules/skin.css";
+@import "./modules/appearance.css";
+@import "./modules/design-system.css";

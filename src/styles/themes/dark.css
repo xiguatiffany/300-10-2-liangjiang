@@ -1,0 +1,228 @@
+/* UI Foundation · Dark Color Mode */
+
+.dark {
+  --brand: #7b71ec;
+  --brand-rgb: 123, 113, 236;
+  --brand-hover: #a59ef2;
+  --brand-dark: #6755f5;
+  --brand-light: #a59ef2;
+  --brand-soft: rgba(123, 113, 236, 0.16);
+  --brand-container: #9587ff;
+  --brand-inverse: #c7bfff;
+  --brand-tint: #a59ef2;
+  --brand-fixed: rgba(123, 113, 236, 0.2);
+  --brand-fixed-dim: rgba(123, 113, 236, 0.32);
+  --brand-on-fixed: #e5e0ff;
+  --brand-on-fixed-variant: #c7bfff;
+
+  --chart-1: #7b71ec;
+  --chart-2: #a59ef2;
+  --chart-3: #c7bfff;
+  --chart-4: #9587ff;
+  --chart-5: #ddd6fe;
+  --chart-6: #4c1d95;
+
+  --surface: #020617;
+  --surface-dim: #0f172a;
+  --surface-container-lowest: #0f172a;
+  --surface-container-low: #1e293b;
+  --surface-container: #1e293b;
+  --surface-container-high: #334155;
+  --surface-container-highest: #475569;
+  --surface-variant: #1e293b;
+  --inverse-surface: #e2e8f0;
+
+  --on-surface: #f1f5f9;
+  --on-surface-variant: #94a3b8;
+  --text-tertiary: #64748b;
+
+  --outline: #94a3b8;
+  --outline-variant: #334155;
+  --border: #1e293b;
+
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --on-primary: #0f172a;
+  --primary-container: var(--brand-container);
+  --ring: var(--brand);
+
+  --secondary: #1e293b;
+  --secondary-container: #334155;
+  --on-secondary-container: #e2e8f0;
+
+  --success: #34d399;
+  --success-container: rgba(5, 150, 105, 0.22);
+  --on-success-container: #a7f3d0;
+  --warning: #fbbf24;
+  --warning-container: rgba(217, 119, 6, 0.22);
+  --on-warning-container: #fde68a;
+  --error: #f87171;
+  --error-container: rgba(220, 38, 38, 0.22);
+  --on-error-container: #fecaca;
+
+  --shadow-color: 0, 0, 0;
+  --shadow-1: 0 4px 12px rgba(var(--shadow-color), 0.35);
+  --shadow-2: 0 8px 24px rgba(var(--shadow-color), 0.45);
+  --shadow-hover: 0 6px 16px rgba(var(--shadow-color), 0.4);
+
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --card: var(--surface-container-lowest);
+  --card-foreground: var(--on-surface);
+  --sidebar: var(--card);
+  --sidebar-primary: var(--brand);
+}
+
+/* Dark mode surface remaps for hardcoded light skins */
+.dark body,
+.dark .app-shell,
+.dark .main {
+  background: var(--surface);
+  color: var(--on-surface);
+}
+
+.dark .topbar {
+  background: rgba(15, 23, 42, 0.88);
+  border-bottom-color: var(--outline-variant);
+}
+
+.dark .sidebar,
+.dark .sidebar-context,
+.dark .sidebar-foot,
+.dark .card,
+.dark .panel,
+.dark .stat-card,
+.dark .rt-card,
+.dark .rt-delay-card,
+.dark .search-panel,
+.dark .popover,
+.dark .modal,
+.dark .drawer,
+.dark .app-tile,
+.dark .portal-search,
+.dark .fp-item,
+.dark .preview-tree,
+.dark .realtime-list,
+.dark .assetops-side,
+.dark .mpi-list,
+.dark .kb-side,
+.dark .topo-card,
+.dark .source-card,
+.dark .dataset-card,
+.dark .model-card,
+.dark .tag-card,
+.dark .issue-card,
+.dark .sql-workbench,
+.dark .sql-result,
+.dark .query-strip,
+.dark .indicator-tree,
+.dark .indicator-summary,
+.dark .graph-stats,
+.dark .quality-hero,
+.dark .lineage,
+.dark .toast {
+  background: var(--surface-container-lowest);
+  border-color: var(--outline-variant);
+  color: var(--on-surface);
+}
+
+.dark .page-title,
+.dark .card-title,
+.dark .stat-value,
+.dark .rt-card-head,
+.dark .rtd-head h3,
+.dark .dtn-head strong,
+.dark .donut-center strong,
+.dark .mini-alert-list strong {
+  color: var(--on-surface);
+}
+
+.dark .page-desc,
+.dark .card-sub,
+.dark .stat-label,
+.dark .rtd-head p,
+.dark .donut-center span {
+  color: var(--on-surface-variant);
+}
+
+.dark .dt-hub {
+  background: var(--brand-soft);
+  border-color: var(--brand-fixed-dim);
+}
+
+.dark .dt-hub strong { color: var(--brand-on-fixed); }
+
+.dark .dt-node {
+  background: var(--surface-container-low);
+  border-color: var(--outline-variant);
+}
+
+.dark button.dt-node:hover {
+  background: var(--surface-container);
+  border-color: rgba(var(--brand-rgb), 0.4);
+}
+
+.dark .dtn-icon { background: var(--brand-soft); color: var(--brand); }
+
+.dark .rt-panel,
+.dark .rt-card-foot,
+.dark .rtd-foot,
+.dark .delay-summary {
+  border-color: var(--outline-variant);
+}
+
+.dark .mini-alert-list > button:hover,
+.dark .tabs-pill .tab.is-active,
+.dark .segmented button.is-active {
+  background: var(--surface-container);
+}
+
+.dark .btn-secondary {
+  background: var(--surface-container-low);
+  border-color: var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.dark .input,
+.dark .select,
+.dark .textarea,
+.dark .search-input {
+  background: var(--surface-container-low);
+  color: var(--on-surface);
+}
+
+.dark .breadcrumb,
+.dark .nav-item,
+.dark .module-tab {
+  color: var(--on-surface-variant);
+}
+
+.dark .btn-secondary,
+.dark .tabs-pill .tab.is-active,
+.dark .search-box.is-open,
+.dark .search-box:focus-within,
+.dark .input:focus,
+.dark .select:focus,
+.dark .textarea:focus,
+.dark .search-input:focus-within {
+  background: var(--surface-container);
+}
+
+.dark .data-table td {
+  border-bottom-color: var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.dark .data-table th {
+  background: var(--surface-container-low);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  background-clip: content-box;
+}
+
+.dark ::selection {
+  background: var(--brand-fixed-dim);
+  color: var(--brand-on-fixed);
+}

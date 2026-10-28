@@ -1,0 +1,11 @@
+import puppeteer from 'puppeteer-core';
+const browser = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--no-sandbox','--disable-gpu','--hide-scrollbars'], userDataDir: './.chrome-profile' });
+const page = await browser.newPage();
+await page.setViewport({ width: 1440, height: 1000 });
+const go = async (p) => { await page.goto(`http://127.0.0.1:5188/${p}`, { waitUntil: 'networkidle0' }); await new Promise(r=>setTimeout(r,600)); };
+await go('center/assets'); await page.click('.asset-main .data-table tbody tr'); await new Promise(r=>setTimeout(r,500)); await page.screenshot({path:'shots/asset-drawer2.png'});
+await go('center/sql'); await page.click('.sql-run-actions .btn-primary'); await new Promise(r=>setTimeout(r,1200)); await page.screenshot({path:'shots/sql-result2.png'});
+await go('center/indicators'); await page.click('.data-table tbody tr'); await new Promise(r=>setTimeout(r,500)); await page.evaluate(()=>{const b=[...document.querySelectorAll('.tab')].find(x=>x.textContent.includes('指标图谱')); b&&b.click();}); await new Promise(r=>setTimeout(r,500)); await page.screenshot({path:'shots/i-graph2.png'});
+await go('admin/permissions'); await page.screenshot({path:'shots/permissions2.png'});
+const m = await browser.newPage(); await m.setViewport({width:390,height:844,deviceScaleFactor:2}); await m.goto('http://127.0.0.1:5188/center/dashboard',{waitUntil:'networkidle0'}); await new Promise(r=>setTimeout(r,600)); await m.screenshot({path:'shots/mobile2.png'});
+await browser.close();

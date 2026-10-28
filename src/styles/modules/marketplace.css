@@ -1,0 +1,37 @@
+/* Module · Marketplace / API services */
+
+/* ── Marketplace ─────────────────────────────────────────────────────────── */
+.market-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(120deg, #132b5e, #1e4aa0); border-radius: 13px; padding: 14px 18px; color: #fff; box-shadow: 0 16px 34px -24px rgba(15,38,90,.55); flex-wrap: wrap; }
+.mb-left { display: flex; align-items: center; gap: 11px; }
+.mb-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; }
+.mb-left strong { font-size: 12.5px; }
+.mb-left p { font-size: 9.5px; color: #b9ccec; margin-top: 3px; }
+.mb-stats { display: flex; gap: 22px; margin-left: auto; font-size: 9.5px; color: #a9c1e5; }
+.mb-stats strong { color: #fff; font-size: 12px; margin-left: 3px; }
+.mb-link { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 7px; height: 30px; padding: 0 10px; font-size: 10px; display: inline-flex; align-items: center; gap: 4px; }
+.api-name { display: flex; align-items: center; gap: 8px; }
+.method { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .04em; border-radius: 4px; padding: 3px 5px; min-width: 38px; text-align: center; }
+.method.get { background: #edf3ff; color: #2456c7; }
+.method.post { background: #e9f9f3; color: #047857; }
+.method.put { background: #fff5e6; color: #B45309; }
+.method.delete { background: #fdf0f2; color: #B91C1C; }
+.method.small { font-size: 7px; min-width: 32px; padding: 2px 4px; }
+.api-trend { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+.api-trend div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 5px; height: 100%; }
+.api-trend span { width: 100%; max-width: 24px; background: linear-gradient(180deg, #6f9bff, var(--brand)); border-radius: 4px 4px 0 0; min-height: 4px; }
+.api-trend em { font-style: normal; font-size: 8px; color: var(--muted-2); }
+.hot-apis { display: flex; flex-direction: column; gap: 2px; }
+.hot-apis > div { display: flex; align-items: center; gap: 9px; padding: 8px 4px; border-bottom: 1px dashed var(--outline-variant); }
+.hot-apis > div:last-child { border-bottom: 0; }
+.rank { width: 17px; height: 17px; border-radius: 5px; background: #f2f5fa; color: #68778f; font-size: 9px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); }
+.hot-apis div > div { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.hot-apis strong { font-size: 10px; color: var(--on-surface-variant); font-weight: 500; }
+.hot-apis small { font-size: 8.5px; color: var(--muted-2); }
+.guarantee-list { display: flex; flex-direction: column; gap: 9px; }
+.guarantee-list > div { display: flex; align-items: center; gap: 8px; }
+.guarantee-list > div > span { width: 23px; height: 23px; border-radius: 6px; background: #f1f6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; }
+.guarantee-list div > div { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.guarantee-list strong { font-size: 9.5px; color: var(--on-surface-variant); font-weight: 500; }
+.guarantee-list small { font-size: 8.5px; color: var(--muted-2); }
+.guarantee-list > div > svg { color: #059669; }
+

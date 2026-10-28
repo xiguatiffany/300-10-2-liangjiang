@@ -1,0 +1,62 @@
+/* UI Foundation · Theme Bridge
+   Maps design tokens → existing app CSS variable aliases.
+   Loaded after tokens so legacy class selectors keep working.
+*/
+
+:root {
+  --font: var(--font-sans);
+  --mono: var(--font-mono);
+
+  --bg: var(--surface);
+  --bg-deep: #eef2f7;
+  --surface-2: var(--surface-container-low);
+
+  --line: var(--outline-variant);
+  --line-strong: #cbd5e1;
+
+  --text: var(--on-surface);
+  --text-2: var(--on-surface-variant);
+  --muted: var(--outline);
+  --muted-2: #94a3b8;
+
+  --blue: var(--brand);
+  --blue-deep: var(--brand-hover);
+  --blue-soft: var(--brand-soft);
+  --violet: #9587ff;
+  --cyan: #0891b2;
+  --green: var(--success);
+  --amber: var(--warning);
+  --red: var(--error);
+
+  --shadow-sm: var(--shadow-1);
+  --shadow: var(--shadow-1);
+  --shadow-lg: var(--shadow-2);
+
+  --input-bg: var(--surface-container-low);
+  --input-bg-focus: var(--surface-container-lowest);
+}
+
+.dark {
+  --bg: var(--surface);
+  --bg-deep: #0b1220;
+  --surface-2: var(--surface-container-low);
+  --line: var(--outline-variant);
+  --line-strong: #334155;
+  --text: var(--on-surface);
+  --text-2: var(--on-surface-variant);
+  --muted: var(--outline);
+  --muted-2: #64748b;
+  --blue-soft: rgba(var(--brand-rgb), 0.16);
+  --input-bg: var(--surface-container-low);
+  --input-bg-focus: var(--surface-container);
+  --shadow-sm: var(--shadow-1);
+  --shadow: var(--shadow-1);
+  --shadow-lg: var(--shadow-2);
+}
+
+[data-theme="institution"] {
+  --blue: var(--brand);
+  --blue-deep: var(--brand-hover);
+  --blue-soft: var(--brand-soft);
+  --violet: var(--brand-light);
+}

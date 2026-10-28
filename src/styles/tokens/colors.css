@@ -1,0 +1,91 @@
+/* UI Foundation · Color Tokens
+   Brand Purple #6755F5 · slate surfaces · semantic colors
+   Keep brand-fixed / event aliases for backward compatibility.
+*/
+
+:root {
+  /* Brand */
+  --brand: #6755f5;
+  --brand-rgb: 103, 85, 245;
+  --brand-dark: #5140d9;
+  --brand-light: #9587ff;
+  --brand-soft: #f3f1ff;
+  --brand-hover: #5140d9;
+  --brand-container: #9587ff;
+  --brand-inverse: #b5aaff;
+  --brand-tint: #5140d9;
+  --brand-fixed: #f3f1ff;
+  --brand-fixed-dim: #dcd6ff;
+  --brand-on-fixed: #3827a6;
+  --brand-on-fixed-variant: #5140d9;
+
+  /* Charts */
+  --chart-1: #6755f5;
+  --chart-2: #9587ff;
+  --chart-3: #b5aaff;
+  --chart-4: #5140d9;
+  --chart-5: #c7bfff;
+  --chart-6: #e5e0ff;
+
+  /* Surfaces */
+  --surface: #f8fafc;
+  --surface-dim: #e2e8f0;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f1f5f9;
+  --surface-container: #eef2f7;
+  --surface-container-high: #e2e8f0;
+  --surface-container-highest: #cbd5e1;
+  --surface-variant: #e2e8f0;
+  --inverse-surface: #0f172a;
+
+  /* Text */
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+  --text-tertiary: #64748b;
+
+  /* Border */
+  --outline: #64748b;
+  --outline-variant: #cbd5e1;
+  --border: #e2e8f0;
+
+  /* Primary mapping */
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --on-primary: #ffffff;
+  --primary-container: var(--brand-container);
+  --primary-fixed: var(--brand-fixed);
+  --primary-fixed-dim: var(--brand-fixed-dim);
+  --on-primary-fixed: var(--brand-on-fixed);
+  --on-primary-fixed-variant: var(--brand-on-fixed-variant);
+  --ring: var(--brand);
+
+  /* Secondary */
+  --secondary: #f1f5f9;
+  --secondary-container: #e2e8f0;
+  --on-secondary-container: #334155;
+
+  /* Semantic */
+  --success: #059669;
+  --success-container: #d1fae5;
+  --on-success-container: #065f46;
+  --warning: #d97706;
+  --warning-container: #fef3c7;
+  --on-warning-container: #92400e;
+  --error: #dc2626;
+  --error-container: #fee2e2;
+  --on-error-container: #991b1b;
+
+  /* Elevation */
+  --shadow-color: 15, 23, 42;
+  --shadow-1: 0 4px 12px rgba(var(--shadow-color), 0.05);
+  --shadow-2: 0 8px 24px rgba(var(--shadow-color), 0.08);
+  --shadow-hover: 0 6px 16px rgba(var(--shadow-color), 0.07);
+
+  /* shadcn-compatible aliases (for future migration) */
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --card: var(--surface-container-lowest);
+  --card-foreground: var(--on-surface);
+  --sidebar: var(--card);
+  --sidebar-primary: var(--primary);
+}

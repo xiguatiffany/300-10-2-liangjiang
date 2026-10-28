@@ -1,0 +1,22 @@
+/* UI Foundation · Badges & tags */
+
+/* ── Badges, tags ─────────────────────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 5px; font-size: 10px; font-weight: 500; white-space: nowrap; line-height: 1; }
+.badge-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.badge-blue { background: #edf3ff; color: #2456c7; }
+.badge-green { background: #e8f8f2; color: #047857; }
+.badge-amber { background: #fff5e6; color: #B45309; }
+.badge-red { background: #fdf0f2; color: #B91C1C; }
+.badge-violet { background: #f1eeff; color: var(--brand-hover); }
+.badge-cyan { background: #e9f9fb; color: #0E7490; }
+.badge-slate { background: #f2f5fa; color: #68778f; }
+.badge-solid.badge-blue { background: var(--blue); color: #fff; }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-2); background: #f4f7fc; border: 1px solid #e9eef7; border-radius: 5px; padding: 2px 6px; }
+.tag i { width: 5px; height: 5px; border-radius: 50%; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.status-dot.tone-green { background: #23a983; box-shadow: 0 0 0 3px rgba(35, 169, 131, .13); }
+.status-dot.tone-amber { background: #e0a02e; box-shadow: 0 0 0 3px rgba(224, 160, 46, .13); }
+.status-dot.tone-red { background: #db5367; box-shadow: 0 0 0 3px rgba(219, 83, 103, .14); }
+.status-dot.tone-blue { background: var(--brand); box-shadow: 0 0 0 3px rgba(47, 99, 246, .13); }
+.status-dot.pulse { animation: pulse 2.4s infinite; }
+
