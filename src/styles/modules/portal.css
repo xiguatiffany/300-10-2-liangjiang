@@ -104,3 +104,40 @@
 .portal-help strong { font-size: 9px; color: var(--on-surface-variant); }
 .portal-help small { font-size: 8px; color: var(--muted-2); }
 
+
+/* C2 portal enhance */
+.portal-account { display: inline-flex; gap: 4px; align-items: center; }
+.portal-account button {
+  border: 1px solid var(--line); background: var(--surface-container-lowest); border-radius: 8px;
+  height: 30px; padding: 0 9px; font-size: 10px; color: #5b6c88; display: inline-flex; align-items: center; gap: 4px;
+}
+.portal-account button:hover { border-color: #bcd2f7; color: var(--blue); }
+.portal-widget-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  padding: 8px 12px; border-radius: 10px; border: 1px dashed #c9d9f2; background: #f5f8ff;
+}
+.portal-widget-bar > span { font-size: 10px; color: #5b6c88; font-weight: 600; }
+.portal-widget-bar > em { font-style: normal; font-size: 9px; color: #8b98b0; margin-left: auto; }
+.portal-widget-bar button {
+  border: 1px solid #e6edf9; background: #fff; border-radius: 16px; padding: 4px 10px; font-size: 9.5px; color: #5b6c88;
+}
+.portal-widget-bar button.is-on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.bid-home.is-custom .portal-hero { outline: 1px dashed rgba(103,85,245,.45); }
+.portal-canvas {
+  min-height: 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px;
+  background: linear-gradient(180deg, #f7f9fc, #fff); border-radius: 12px; border: 1px dashed #d7e2f2;
+}
+.portal-canvas-item {
+  position: relative; min-height: 88px; border-radius: 10px; border: 1px solid #e6edf9; background: #fff;
+  padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm);
+}
+.portal-canvas-item strong { font-size: 12px; color: #1e2d4a; }
+.portal-canvas-item small { font-size: 9px; color: #8b98b0; }
+.portal-canvas-item button {
+  position: absolute; top: 8px; right: 8px; border: 0; background: #f1f5f9; border-radius: 6px; width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center; color: #64748b;
+}
+@media (max-width: 900px) {
+  .portal-canvas { grid-template-columns: 1fr; }
+  .portal-account { width: 100%; }
+}

@@ -25,20 +25,60 @@ export function ServicesPage() {
   const [edit, setEdit] = useState<Service | null>(null);
   const [authTarget, setAuthTarget] = useState<Service | null>(null);
   const [authOrg, setAuthOrg] = useState('重医附二院');
+  const [demoing, setDemoing] = useState(false);
+  const [tested, setTested] = useState(false);
+  const [replicaOk, setReplicaOk] = useState(false);
+  const [mqOk, setMqOk] = useState(false);
+  const [authOk, setAuthOk] = useState(false);
 
   const filtered = rows.filter((r) => (!type || r.type === type) && (r.name + r.desc + (r.org || '')).toLowerCase().includes(q.toLowerCase()));
   const domestic = rows.filter((r) => ['dameng', 'kingbase', 'opengauss'].includes(r.type)).length;
   const mq = rows.filter((r) => r.category === 'mq').length;
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('components'); setType('dameng');
+    const dm = rows.find((r) => r.type === 'dameng') || rows[0];
+    notify(`① 国产库接入验证：${dm?.name || '达梦'} JDBC 连通`);
+    setTested(true);
+    await new Promise((r) => setTimeout(r, 400));
+    setReplicaOk(true);
+    notify('② 副本入湖可追溯已启用');
+    await new Promise((r) => setTimeout(r, 350));
+    setType('kafka'); setMqOk(true);
+    notify('③ Kafka/Pulsar 实时捕获组件就绪');
+    await new Promise((r) => setTimeout(r, 350));
+    setTab('auth'); setAuthOk(true);
+    if (dm) setAuthTarget(dm);
+    notify('④ 机构授权：未授权不可获取连接 · 越权拦截可验');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="DATABASE COMPONENT ACCESS"
+        eyebrow="DATABASE COMPONENT ACCESS · A2-06"
         title="数据库组件接入"
-        desc="支持多类国产主流数据库 JDBC/ODBC 接入；数据副本入湖可追溯；集成 Kafka / Pulsar 实现变更实时捕获。"
-        actions={<><Btn icon="upload" onClick={() => notify('批量接入向导已打开', 'info')}>批量接入</Btn><Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新增组件</Btn></>}
+        desc="验收：至少 3 类国产库 JDBC/ODBC 接入验证；副本入湖可追溯；Kafka/Pulsar 实时捕获。"
+        actions={<><Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn><Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新增组件</Btn></>}
       />
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '国产库接入', d: '达梦/金仓/openGauss', on: tested },
+          { n: '02', t: '副本入湖', d: '可追溯', on: replicaOk },
+          { n: '03', t: '实时捕获', d: 'Kafka / Pulsar', on: mqOk },
+          { n: '04', t: '机构授权', d: '越权拦截', on: authOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> 国产库 {domestic} · MQ {mq}{authOk ? ' · 授权可验' : ''}</span>
+      </div>
+      <div className="stat-grid mt-14">
         <StatCard label="接入组件" value={rows.length.toString()} unit="个" delta={`国产库 ${domestic}`} icon="server" tone="blue" />
         <StatCard label="副本入湖" value={rows.filter((r) => r.replica).length.toString()} unit="个" delta="可追溯" icon="layers" tone="green" />
         <StatCard label="消息队列" value={String(mq)} unit="个" delta="Kafka / Pulsar" icon="zap" tone="violet" />
@@ -226,6 +266,10 @@ export function ChannelsPage() {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Channel | null>(null);
   const [busyId, setBusyId] = useState('');
+  const [demoing, setDemoing] = useState(false);
+  const [cfgOk, setCfgOk] = useState(false);
+  const [toggleOk, setToggleOk] = useState(false);
+  const [failOk, setFailOk] = useState(false);
 
   const filtered = rows.filter((r) =>
     (!type || r.type === type)
@@ -248,26 +292,56 @@ export function ChannelsPage() {
         return next;
       });
       setBusyId('');
-      if (fail) notify(`启动失败：${ch.failReason || '前置网络未放行'}`, 'error');
+      setToggleOk(true);
+      if (fail) { setFailOk(true); notify(`启动失败：${ch.failReason || '前置网络未放行'}`, 'error'); }
       else notify(action === 'start' ? `${ch.name} 已启动` : `${ch.name} 已停止`);
     }, 700);
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setCfgOk(true); setMode('前置模式'); setType('CDC同步');
+    notify('① CDC 配置：源端/表选择/路由/前置模式');
+    await new Promise((r) => setTimeout(r, 400));
+    const okCh = rows.find((r) => r.type.includes('CDC') && r.id !== 'C11') || rows[0];
+    if (okCh) toggleRun(okCh, okCh.running ? 'stop' : 'start');
+    await new Promise((r) => setTimeout(r, 800));
+    const failCh = rows.find((r) => r.id === 'C11') || rows.find((r) => r.failReason);
+    if (failCh) { toggleRun(failCh, 'start'); setFailOk(true); }
+    notify('②③ 启停反馈 + 失败原因可追溯');
+    setDemoing(false);
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="CDC SYNC MANAGEMENT"
+        eyebrow="CDC SYNC MANAGEMENT · A2-09/10"
         title="CDC 同步管理"
-        desc="配置同步任务并支持页面启停；部署模式支持跨网前置与平台侧集中，启停失败展示原因。"
+        desc="验收：同步配置可保存运行；启停成功率可演示，失败原因可追溯；前置/集中部署模式。"
         actions={
           <>
-            <Btn icon="gauge" onClick={() => go('/collection/access-panorama')}>接入全景</Btn>
-            <Btn icon="zap" onClick={() => go('/bid/realtime-channel')}>实时通道演示</Btn>
+            <Btn icon="zap" loading={demoing || !!busyId} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="gauge" onClick={() => go('/collection/cdc-monitor')}>同步监控</Btn>
             <Btn variant="primary" icon="plus" onClick={() => { setEdit(null); setOpen(true); }}>新建同步任务</Btn>
           </>
         }
       />
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '同步配置', d: '源端·表·路由', on: cfgOk },
+          { n: '02', t: '任务启停', d: '页面一键控制', on: toggleOk },
+          { n: '03', t: '失败追溯', d: '原因可回看', on: failOk || rows.some((r) => !!r.failReason) },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> 运行中 {rows.filter((r) => r.running).length} · 前置 {rows.filter((r) => r.deployMode === '前置模式').length}</span>
+      </div>
+      <div className="stat-grid mt-14">
         <StatCard label="同步任务" value={rows.length.toString()} unit="条" delta={`CDC ${rows.filter((r) => r.type.includes('CDC')).length}`} icon="cable" tone="blue" />
         <StatCard label="运行中" value={rows.filter((r) => r.running).length.toString()} unit="条" delta="可一键启停" icon="play" tone="green" />
         <StatCard label="前置模式" value={rows.filter((r) => r.deployMode === '前置模式').length.toString()} unit="条" delta="跨网单向" icon="network" tone="violet" />

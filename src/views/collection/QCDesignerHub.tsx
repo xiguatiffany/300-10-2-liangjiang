@@ -12,6 +12,7 @@ import {
 
 type QcKind = 'source' | 'transform' | 'quality' | 'join' | 'sink';
 type RunPhase = 'idle' | 'running' | 'done';
+type AcceptPhase = 'compose' | 'run' | 'metrics' | 'drill';
 
 type PaletteItem = {
   kind: QcKind;
@@ -109,7 +110,11 @@ export function QCDesignerHubPage() {
   const [edgeStates, setEdgeStates] = useState<Record<string, EdgeRunState>>({});
   const [selectedId, setSelectedId] = useState('comp');
   const [phase, setPhase] = useState<RunPhase>('idle');
+  const [accept, setAccept] = useState<AcceptPhase>('compose');
+  const [composed, setComposed] = useState(true);
   const [ran, setRan] = useState(false);
+  const [drilled, setDrilled] = useState(false);
+  const [demoing, setDemoing] = useState(false);
   const [tab, setTab] = useState<'exceptions' | 'nodes' | 'log'>('exceptions');
   const [logs, setLogs] = useState<string[]>([]);
   const [activeEx, setActiveEx] = useState<ExceptionRow | null>(null);
@@ -133,7 +138,9 @@ export function QCDesignerHubPage() {
 
   const resetRun = () => {
     setPhase('idle');
+    setAccept('compose');
     setRan(false);
+    setDrilled(false);
     setEdgeStates({});
     setLogs([]);
     setGraph((arr) => arr.map((n) => ({
@@ -141,10 +148,22 @@ export function QCDesignerHubPage() {
     })));
   };
 
+  const openExceptionDrill = (row?: ExceptionRow) => {
+    setAccept('drill');
+    setDrilled(true);
+    setTab('exceptions');
+    setSelectedId('branch');
+    const hit = row || (qcExceptions[0] as ExceptionRow);
+    setActiveEx(hit);
+    notify(`异常下钻：${hit[1] || hit[0]}`);
+  };
+
   const runFlow = async () => {
     if (phase === 'running') return;
     setPhase('running');
+    setAccept('run');
     setRan(false);
+    setDrilled(false);
     setTab('log');
     setLogs([]);
     setEdgeStates({});
@@ -194,9 +213,26 @@ export function QCDesignerHubPage() {
     pushLog(`${new Date().toLocaleTimeString('zh-CN', { hour12: false })}  完成 · 入库 ${fmt(128428)} · 异常 ${fmt(214)} · 耗时 ${cost}s`);
     setPhase('done');
     setRan(true);
-    setTab('exceptions');
+    setAccept('metrics');
+    setTab('nodes');
     setSelectedId('branch');
     notify('质控流程执行完成：通过 128,428 行，异常 214 行已分流');
+  };
+
+  const demoAccept = async () => {
+    if (phase === 'running' || demoing) return;
+    setDemoing(true);
+    setAccept('compose');
+    addNode(palette.find((p) => p.kind === 'quality') || palette[2]);
+    setComposed(true);
+    notify('① 已编排：新增规则校验节点');
+    await new Promise((r) => setTimeout(r, 400));
+    await runFlow();
+    setAccept('metrics');
+    notify('③ 节点指标就绪 → ④ 异常下钻');
+    await new Promise((r) => setTimeout(r, 350));
+    openExceptionDrill();
+    setDemoing(false);
   };
 
   const addNode = (item: PaletteItem) => {
@@ -235,6 +271,8 @@ export function QCDesignerHubPage() {
     }
     setSelectedId(id);
     setRan(false);
+    setComposed(true);
+    setAccept('compose');
     notify(`已添加节点「${item.label}」，可拖拽调整位置`);
   };
 
@@ -247,37 +285,29 @@ export function QCDesignerHubPage() {
   return (
     <>
       <PageHeader
-        eyebrow="QC VISUAL PIPELINE · A5-04"
+        eyebrow="QC VISUAL PIPELINE · A5-04 ★"
         title="质控可视化流程"
-        desc="拖拽编排节点 · 一键执行全链路 · 查看节点入出量/成功失败 · 异常明细下钻。验收：编排 → 执行 → 节点指标 → 异常下钻。"
+        desc="验收：拖拽编排 → 执行流程 → 节点指标 → 异常下钻；可视化编排质控全链路。"
         actions={
           <>
-            <Btn icon="shieldalert" onClick={() => go('/collection/graded-qc')}>分级质控</Btn>
-            <Btn icon="sparkles" onClick={() => go('/collection/smart-qc')}>智能质控</Btn>
             <Btn icon="save" onClick={saveDraft}>保存草稿</Btn>
             <Btn icon="refresh" onClick={resetRun} disabled={phase === 'running'}>重置</Btn>
+            <Btn icon="zap" loading={demoing || phase === 'running'} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="play" loading={phase === 'running'} onClick={runFlow}>运行流程</Btn>
             <Btn variant="primary" icon="rocket" loading={phase === 'running'} onClick={publish}>发布流程</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
-        <StatCard label="流程节点" value={String(totals.nodes)} unit="个" delta={`${edges.length} 条连线`} icon="workflow" tone="blue" />
-        <StatCard label="处理数据" value={ran ? '128.6' : '—'} unit={ran ? '万' : ''} delta="今日累计" icon="database" tone="violet" />
-        <StatCard label="异常拦截" value={ran ? String(totals.fail) : '—'} unit="行" delta={ran ? '拦截率 0.17%' : '运行后展示'} icon="circlealert" tone="amber" />
-        <StatCard label="合格入库" value={ran ? '128,428' : '—'} unit="行" delta={phase === 'running' ? '执行中…' : ran ? 'DWD 已写入' : '待执行'} icon="checkcircle" tone="green" />
-      </div>
-
-      <div className="qc-accept mt-14">
+      <div className="qc-accept">
         {[
-          { n: '01', t: '拖拽编排', d: '节点库添加 · 画布拖拽' },
-          { n: '02', t: '执行流程', d: '拓扑顺序逐步跑通' },
-          { n: '03', t: '节点指标', d: '入出量 · 成功失败' },
-          { n: '04', t: '异常下钻', d: '分流明细 · 可回查' },
+          { n: '01', t: '拖拽编排', d: '节点库 · 画布', k: 'compose' as const, on: composed },
+          { n: '02', t: '执行流程', d: '拓扑逐步跑通', k: 'run' as const, on: phase === 'running' || ran },
+          { n: '03', t: '节点指标', d: '入出量 · 成败', k: 'metrics' as const, on: ran },
+          { n: '04', t: '异常下钻', d: '分流明细回查', k: 'drill' as const, on: drilled },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${phase !== 'idle' || ran ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${accept === s.k || s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -285,7 +315,14 @@ export function QCDesignerHubPage() {
             {i < 3 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> {phase === 'running' ? '流程执行中' : ran ? '执行完成' : '待执行'}</span>
+        <span className="live-badge"><i /> {phase === 'running' ? '流程执行中' : drilled ? '异常已下钻' : ran ? '指标就绪' : '待执行'}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
+        <StatCard label="流程节点" value={String(totals.nodes)} unit="个" delta={`${edges.length} 条连线`} icon="workflow" tone="blue" />
+        <StatCard label="处理数据" value={ran ? '128.6' : '—'} unit={ran ? '万' : ''} delta="今日累计" icon="database" tone="violet" />
+        <StatCard label="异常拦截" value={ran ? String(totals.fail) : '—'} unit="行" delta={ran ? '拦截率 0.17%' : '运行后展示'} icon="circlealert" tone="amber" onClick={() => ran && openExceptionDrill()} />
+        <StatCard label="合格入库" value={ran ? '128,428' : '—'} unit="行" delta={phase === 'running' ? '执行中…' : ran ? 'DWD 已写入' : '待执行'} icon="checkcircle" tone="green" />
       </div>
 
       <div className="qc-hub-layout mt-14">
@@ -440,7 +477,7 @@ export function QCDesignerHubPage() {
                 rows={exceptionRows}
                 pageSize={6}
                 paginate={false}
-                onRowClick={(r) => setActiveEx(r)}
+                onRowClick={(r) => openExceptionDrill(r)}
                 columns={[
                   { key: '0', title: '异常ID', width: 90, render: (r) => <span className="mono-cell">{r[0]}</span> },
                   { key: '1', title: '异常描述', render: (r) => <div className="cell-main"><strong>{r[1]}</strong><small>{r[2]}</small></div> },
@@ -450,7 +487,7 @@ export function QCDesignerHubPage() {
                   { key: '6', title: '状态', width: 80, render: (r) => <Badge dot>{r[6]}</Badge> },
                   {
                     key: '7', title: '操作', width: 72,
-                    render: (r) => <button type="button" className="link-btn" onClick={(e) => { e.stopPropagation(); setActiveEx(r); }}>下钻</button>,
+                    render: (r) => <button type="button" className="link-btn" onClick={(e) => { e.stopPropagation(); openExceptionDrill(r); }}>下钻</button>,
                   },
                 ]}
               />

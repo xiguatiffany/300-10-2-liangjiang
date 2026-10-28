@@ -192,31 +192,62 @@ export function CollectModesPage() {
   const { go, notify } = useApp();
   const [mode, setMode] = useState<ModeKey>('full');
   const [open, setOpen] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [seen, setSeen] = useState<Record<ModeKey, boolean>>({ full: true, incr: false, unstruct: false });
   React.useEffect(() => {
     const m = new URLSearchParams(window.location.search).get('mode') as ModeKey | null;
-    if (m && modes.some((x) => x.key === m)) setMode(m);
+    if (m && modes.some((x) => x.key === m)) { setMode(m); setSeen((s) => ({ ...s, [m]: true })); }
   }, []);
   const current = modes.find((m) => m.key === mode)!;
   const jobs = modeJobs.filter((j) => j.mode === mode);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    for (const k of ['full', 'incr', 'unstruct'] as ModeKey[]) {
+      setMode(k); setSeen((s) => ({ ...s, [k]: true }));
+      notify(k === 'full' ? '① 存量结构化：初始化校验策略' : k === 'incr' ? '② 增量 T+0：延迟≤5 分钟' : '③ 非结构化：文件目录可检索');
+      await new Promise((r) => setTimeout(r, 450));
+    }
+    setMode('incr');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="COLLECTION MODES"
+        eyebrow="COLLECTION MODES · A2-02/03/04"
         title="存量 / 增量 / 非结构化采集"
-        desc="按招标口径分别配置结构化存量、T+0 增量与非结构化文件采集策略，并跟踪任务执行。"
+        desc="验收：存量初始化可校验 · 增量延迟≤5 分钟 · 非结构化目录/元数据可检索。"
         actions={
           <>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="workflow" onClick={() => go('/collection/collection-wizard')}>采集方案</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新建采集任务</Btn>
           </>
         }
       />
 
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '存量结构化', d: '初始化·校验', k: 'full' as ModeKey },
+          { n: '02', t: '增量结构化', d: 'T+0 · ≤5min', k: 'incr' as ModeKey },
+          { n: '03', t: '非结构化', d: '目录·元数据', k: 'unstruct' as ModeKey },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${mode === s.k || seen[s.k] ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {current.sla}</span>
+      </div>
+
       <Tabs
+        className="mt-14"
         variant="pill"
         value={mode}
-        onChange={(k) => setMode(k as ModeKey)}
+        onChange={(k) => { const m = k as ModeKey; setMode(m); setSeen((s) => ({ ...s, [m]: true })); }}
         items={modes.map((m) => ({ key: m.key, label: m.key === 'full' ? '存量结构化' : m.key === 'incr' ? '增量结构化' : '非结构化' }))}
       />
 
@@ -312,6 +343,9 @@ export function CollectDatasetsPage() {
   const [q, setQ] = useState('');
   const [active, setActive] = useState<DatasetCat | null>(datasets[0]);
   const [open, setOpen] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [visited, setVisited] = useState<Set<string>>(new Set([datasets[0]?.name || '']));
+  const [exported, setExported] = useState(false);
 
   const rows = useMemo(() => datasets.filter((d) => (d.name + d.en).toLowerCase().includes(q.toLowerCase())), [q]);
   const detailItems = useMemo(() => {
@@ -322,21 +356,49 @@ export function CollectDatasetsPage() {
   const totalTables = datasets.reduce((a, d) => a + d.tables, 0);
   const totalCovered = datasets.reduce((a, d) => a + d.covered, 0);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    for (const d of datasets) {
+      setActive(d);
+      setVisited((v) => new Set(v).add(d.name));
+      notify(`覆盖数据集：${d.name}`);
+      await new Promise((r) => setTimeout(r, 350));
+    }
+    setExported(true);
+    notify('四类数据集模板与校验规则已落地 · 范围清单可导出');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="COLLECTION DATASETS"
+        eyebrow="COLLECTION DATASETS · A2-05"
         title="采集数据集管理"
-        desc="管理医疗电子病历、公卫健康档案、全员人口、电子病历文书四类数据集采集范围、覆盖率与优先级。"
+        desc="验收：电子病历 / 公卫 / 全员人口 / 文书四类数据集模板与校验规则落地。"
         actions={
           <>
-            <Btn icon="download" onClick={() => notify('数据集范围清单已导出')}>导出范围</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="download" onClick={() => { setExported(true); notify('数据集范围清单已导出'); }}>导出范围</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>登记缺项表</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {datasets.slice(0, 4).map((d, i) => (
+          <React.Fragment key={d.name}>
+            <div className={`qc-accept-step ${active?.name === d.name || visited.has(d.name) ? 'is-on' : ''}`}>
+              <em>{String(i + 1).padStart(2, '0')}</em>
+              <strong>{d.name.replace(/数据集|采集/, '').slice(0, 8)}</strong>
+              <small>{d.covered}/{d.tables} 表</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {exported ? '范围已导出' : `覆盖 ${visited.size}/4 类`}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="数据集" value="4" unit="类" delta="招标全覆盖" icon="boxes" tone="blue" />
         <StatCard label="标准表项" value={String(totalTables)} unit="张" delta={`已覆盖 ${totalCovered}`} icon="table" tone="violet" />
         <StatCard label="整体覆盖率" value={String(Math.round((totalCovered / totalTables) * 1000) / 10)} unit="%" delta="+3.2% 本月" icon="gauge" tone="green" />

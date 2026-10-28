@@ -96,6 +96,9 @@ export function GovernanceServiceHubPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [dcmmRunning, setDcmmRunning] = useState(false);
   const [dcmmDone, setDcmmDone] = useState(true);
+  const [demoing, setDemoing] = useState(false);
+  const [planOk, setPlanOk] = useState(false);
+  const [implOk, setImplOk] = useState(false);
 
   const filteredOrgs = useMemo(() => orgs.filter((o) =>
     (!stage || o.stage === stage)
@@ -135,7 +138,25 @@ export function GovernanceServiceHubPage() {
 
   const submitReview = () => {
     setReviewOpen(false);
+    setPlanOk(true);
+    setTab('plan');
     notify('制度/规范评审已提交，待治理委员会确认');
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('plan'); setPlanOk(true);
+    notify('① 组织/制度/规范已就绪，可提交评审');
+    await new Promise((r) => setTimeout(r, 400));
+    await runDcmm();
+    notify('② DCMM 评估与差距清单已输出');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('impl');
+    const target = orgs.find((o) => o.stage !== '运营') || orgs[0];
+    if (target) advanceOrg(target.id);
+    setImplOk(true);
+    notify('③ 机构实施已推进 · 指标可跟踪');
+    setDemoing(false);
   };
 
   return (
@@ -143,11 +164,10 @@ export function GovernanceServiceHubPage() {
       <PageHeader
         eyebrow="GOVERNANCE SERVICE · A6"
         title="数据治理服务"
-        desc="A6-01 规划与制度（组织设计、DCMM、实施路径、规范编制）· A6-02 采集治理实施（资源梳理→接入→治理→验收→运营）。"
+        desc="验收：规划制度评审落地 → DCMM 评估 → 按机构实施达标跟踪。"
         actions={
           <>
-            <Btn icon="file" onClick={() => go('/bid/standard-docs')}>标准文档</Btn>
-            <Btn icon="shield" onClick={() => go('/collection/qc-results')}>质量考核</Btn>
+            <Btn icon="zap" loading={demoing || dcmmRunning} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="activity" loading={dcmmRunning} onClick={runDcmm}>刷新 DCMM</Btn>
             <Btn variant="primary" icon="checkcircle" onClick={() => setReviewOpen(true)}>提交评审</Btn>
           </>
@@ -156,12 +176,12 @@ export function GovernanceServiceHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '规划制度', d: '组织 · 路径 · 规范' },
-          { n: '02', t: 'DCMM 评估', d: '成熟度 · 差距' },
-          { n: '03', t: '实施跟踪', d: '按机构达标' },
+          { n: '01', t: '规划制度', d: '组织 · 路径 · 规范', on: planOk || tab === 'plan' },
+          { n: '02', t: 'DCMM 评估', d: '成熟度 · 差距', on: dcmmDone || tab === 'dcmm' },
+          { n: '03', t: '实施跟踪', d: '按机构达标', on: implOk || tab === 'impl' },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'plan' : i === 1 ? 'dcmm' : 'impl') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -169,7 +189,7 @@ export function GovernanceServiceHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 路径 {pathDone}/{pathSteps.length} · 实施进度 {avgProgress}%</span>
+        <span className="live-badge"><i /> {implOk ? '实施已跟踪' : dcmmDone && planOk ? '评估就绪' : `路径 ${pathDone}/${pathSteps.length} · 进度 ${avgProgress}%`}</span>
       </div>
 
       <div className="stat-grid mt-14">

@@ -6,13 +6,16 @@ import { AreaChart } from '../../components/charts';
 import { Badge, Btn, Card, DataTable, Drawer, KeyValue, PageHeader, Progress, SearchInput, Select, StatCard, Tabs } from '../../components/ui';
 import { useApp } from '../../app-context';
 
-type TabKey = 'assess' | 'classify' | 'audit';
+type TabKey = 'assess' | 'classify' | 'protect' | 'ops' | 'audit';
 
 type DsmmDim = { key: string; name: string; level: number; target: number; gap: string };
 type RiskItem = { id: string; asset: string; threat: string; vuln: string; level: '高' | '中' | '低'; score: number; advice: string };
 type SensField = { id: string; table: string; field: string; type: string; level: 'L1' | 'L2' | 'L3' | 'L4'; hit: boolean; mask: string; sample: string; masked: string };
 type AuditRow = { id: string; at: string; actor: string; action: string; object: string; result: string; hash: string };
 type PatrolItem = { id: string; scope: string; check: string; status: '通过' | '告警' | '阻断'; detail: string };
+type DbAsset = { id: string; name: string; engine: string; sens: number; status: '已登记' | '发现中' | '待确认'; owner: string };
+type MaskJob = { id: string; name: string; scope: string; strategy: string; status: '成功' | '运行中' | '失败'; last: string };
+type KeyRow = { id: string; name: string; kind: '主密钥' | '脱敏密钥' | '导出密钥'; holder: string; status: '启用' | '轮换中' | '停用'; expire: string };
 
 const dsmmDims: DsmmDim[] = [
   { key: 'org', name: '安全组织', level: 3, target: 4, gap: '基层机构安全员兼职比例高' },
@@ -62,7 +65,29 @@ const patrolSeed: PatrolItem[] = [
   { id: 'PT-06', scope: '审计', check: '日志完整性/防篡改', status: '通过', detail: '哈希链校验一致' },
 ];
 
-/** A9 数据安全服务：评估 · 分类分级脱敏 · 巡检审计 */
+const dbAssets: DbAsset[] = [
+  { id: 'DB-01', name: '湖仓 ODS', engine: 'Doris', sens: 1286, status: '已登记', owner: '数仓组' },
+  { id: 'DB-02', name: 'HIS 从库', engine: '达梦', sens: 420, status: '已登记', owner: '信息中心' },
+  { id: 'DB-03', name: 'EMR 只读库', engine: '金仓', sens: 860, status: '发现中', owner: '病案室' },
+  { id: 'DB-04', name: '开放 API 元库', engine: 'PostgreSQL', sens: 64, status: '已登记', owner: '开放平台' },
+  { id: 'DB-05', name: '科研沙箱', engine: 'openGauss', sens: 210, status: '待确认', owner: '科研处' },
+];
+
+const maskJobs: MaskJob[] = [
+  { id: 'MJ-01', name: '患者主档动态脱敏', scope: 'ods_his.patient', strategy: 'L3 组合策略', status: '成功', last: '02:18' },
+  { id: 'MJ-02', name: '导出批次静态脱敏', scope: '共享文件包', strategy: '身份证/手机/姓名', status: '运行中', last: '14:20' },
+  { id: 'MJ-03', name: 'API 响应脱敏', scope: '/open/v1/*', strategy: '按字段分级', status: '成功', last: '14:18' },
+  { id: 'MJ-04', name: '历史分区回刷', scope: 'ods_his.patient_hist', strategy: 'L3 回写', status: '失败', last: '昨日' },
+];
+
+const keySeed: KeyRow[] = [
+  { id: 'KY-01', name: '平台主密钥 CMK', kind: '主密钥', holder: '安全管理员', status: '启用', expire: '2027-06-01' },
+  { id: 'KY-02', name: '动态脱敏 DEK', kind: '脱敏密钥', holder: '脱敏引擎', status: '启用', expire: '2026-12-31' },
+  { id: 'KY-03', name: '导出还原密钥', kind: '导出密钥', holder: '治理办审批后签发', status: '轮换中', expire: '2026-11-30' },
+  { id: 'KY-04', name: '科研沙箱密钥', kind: '脱敏密钥', holder: '科研处', status: '停用', expire: '2026-08-01' },
+];
+
+/** A9 数据安全服务 + B12 数据安全中心：评估 · 分级脱敏 · 密钥保护 · 运营态势 · 巡检审计 */
 export function DataSecurityHubPage() {
   const { go, notify } = useApp();
   const [tab, setTab] = useState<TabKey>('assess');
@@ -77,6 +102,11 @@ export function DataSecurityHubPage() {
   const [verifyMask, setVerifyMask] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
   const [hitRate, setHitRate] = useState(92.5);
+  const [keys, setKeys] = useState(keySeed);
+  const [jobs, setJobs] = useState(maskJobs);
+  const [discoverBusy, setDiscoverBusy] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [visited, setVisited] = useState<Record<TabKey, boolean>>({ assess: true, classify: false, protect: false, ops: false, audit: false });
 
   const sensFiltered = useMemo(() => sensSeed.filter((f) =>
     (!levelFilter || f.level === levelFilter)
@@ -94,6 +124,7 @@ export function DataSecurityHubPage() {
   const runAssess = async () => {
     setAssessing(true);
     setTab('assess');
+    setVisited((v) => ({ ...v, assess: true }));
     setAssessDone(false);
     await new Promise((r) => setTimeout(r, 1100));
     setAssessDone(true);
@@ -104,6 +135,7 @@ export function DataSecurityHubPage() {
   const runSensScan = async () => {
     setScanBusy(true);
     setTab('classify');
+    setVisited((v) => ({ ...v, classify: true }));
     await new Promise((r) => setTimeout(r, 900));
     setHitRate(Math.max(90, sensHit));
     setScanBusy(false);
@@ -113,27 +145,66 @@ export function DataSecurityHubPage() {
   const doVerifyMask = () => {
     setVerifyMask(true);
     setActiveField(sensSeed[0]);
+    setTab('protect');
+    setVisited((v) => ({ ...v, protect: true, classify: true }));
     notify('脱敏可验证：明文→策略→脱敏结果对照已展示');
   };
 
   const exportAudit = () => {
+    setTab('audit');
+    setVisited((v) => ({ ...v, audit: true }));
     notify(`审计日志已导出 ${auditFiltered.length} 条（含哈希防篡改校验）`);
+  };
+
+  const demoAccept = async () => {
+    if (demoing || assessing || scanBusy) return;
+    setDemoing(true);
+    await runAssess();
+    notify('① 安全评估 / DSMM 报告就绪');
+    await new Promise((r) => setTimeout(r, 350));
+    await runSensScan();
+    doVerifyMask();
+    notify('② 分类分级识别≥90% · 脱敏可验证');
+    await new Promise((r) => setTimeout(r, 350));
+    setTab('ops'); setVisited((v) => ({ ...v, ops: true }));
+    exportAudit();
+    notify('③④ 运营巡检 + 审计可导/防篡改 · 验收完成');
+    setDemoing(false);
   };
 
   const exportReport = () => {
     notify('风险评估与差距报告已生成（PDF）');
   };
 
+  const runDiscover = async () => {
+    setDiscoverBusy(true);
+    setTab('ops');
+    await new Promise((r) => setTimeout(r, 800));
+    setDiscoverBusy(false);
+    notify('数据库资产发现完成 · AI 敏感识别已刷新态势');
+  };
+
+  const rotateKey = (id: string) => {
+    setKeys((arr) => arr.map((k) => k.id === id ? { ...k, status: '轮换中' } : k));
+    notify('密钥轮换已启动 · 审计已记');
+  };
+
+  const rerunJob = async (id: string) => {
+    setJobs((arr) => arr.map((j) => j.id === id ? { ...j, status: '运行中', last: '刚刚' } : j));
+    await new Promise((r) => setTimeout(r, 700));
+    setJobs((arr) => arr.map((j) => j.id === id ? { ...j, status: '成功', last: '刚刚' } : j));
+    notify('脱敏任务已重跑成功');
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="DATA SECURITY SERVICE · A9"
-        title="数据安全服务"
-        desc="A9-01 安全评估/DSMM · A9-02 分类分级/敏感识别/动态脱敏 · A9-03 巡检/审计/权限/出口监管。"
+        eyebrow="DATA SECURITY CENTER · A9 / B12"
+        title="数据安全中心"
+        desc="验收：评估报告 → 识别≥90%/脱敏可验 → 巡检审计可导防篡改；覆盖 A9 与 B12。"
         actions={
           <>
-            <Btn icon="key" onClick={() => go('/admin/data-permissions')}>数据权限</Btn>
-            <Btn icon="scroll" onClick={() => go('/collection/audit')}>审计日志</Btn>
+            <Btn icon="zap" loading={demoing || assessing || scanBusy} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="download" onClick={exportReport}>导出评估报告</Btn>
             <Btn variant="primary" icon="shield" loading={assessing} onClick={runAssess}>执行安全评估</Btn>
           </>
@@ -142,27 +213,29 @@ export function DataSecurityHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '安全评估', d: '风险·DSMM·差距报告' },
-          { n: '02', t: '分类分级', d: '识别≥90%·脱敏可验' },
-          { n: '03', t: '巡检审计', d: '可查·可导·防篡改' },
+          { n: '01', t: '安全评估', d: '风险·DSMM·差距', k: 'assess' as TabKey },
+          { n: '02', t: '分类分级', d: '识别≥90%·可验', k: 'classify' as TabKey },
+          { n: '03', t: '数据保护', d: '脱敏任务·密钥', k: 'protect' as TabKey },
+          { n: '04', t: '安全运营', d: '资产·应用·人员', k: 'ops' as TabKey },
+          { n: '05', t: '巡检审计', d: '可查·可导·防篡改', k: 'audit' as TabKey },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'assess' : i === 1 ? 'classify' : 'audit') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${tab === s.k || visited[s.k] ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
             </div>
-            {i < 2 && <Icon name="arrowright" size={13} />}
+            {i < 4 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> DSMM {dsmmAvg} · 识别率 {hitRate}%</span>
+        <span className="live-badge"><i /> {verifyMask ? '脱敏已验' : ''} DSMM {dsmmAvg} · 识别率 {hitRate}%{visited.audit ? ' · 审计可导' : ''}</span>
       </div>
 
       <div className="stat-grid mt-14">
         <StatCard label="DSMM 成熟度" value={dsmmAvg} unit="级" delta={assessDone ? '评估就绪' : '评估中'} icon="shield" tone="violet" onClick={() => setTab('assess')} />
-        <StatCard label="高风险项" value={String(highRisk)} unit="项" delta="待整改" icon="circlealert" tone="red" onClick={() => setTab('assess')} />
         <StatCard label="敏感识别率" value={String(hitRate)} unit="%" delta="验收 ≥90%" icon="target" tone="green" onClick={() => setTab('classify')} />
-        <StatCard label="审计事件" value={String(auditSeed.length)} unit="条" delta="防篡改哈希" icon="scroll" tone="blue" onClick={() => setTab('audit')} />
+        <StatCard label="脱敏/密钥" value={String(jobs.length + keys.length)} unit="项" delta="可轮换" icon="key" tone="amber" onClick={() => setTab('protect')} />
+        <StatCard label="库资产" value={String(dbAssets.length)} unit="个" delta="可发现" icon="database" tone="blue" onClick={() => setTab('ops')} />
       </div>
 
       <Tabs
@@ -173,6 +246,8 @@ export function DataSecurityHubPage() {
         items={[
           { key: 'assess', label: '安全评估 / DSMM', count: risksSeed.length },
           { key: 'classify', label: '分类分级与脱敏', count: sensSeed.length },
+          { key: 'protect', label: '数据保护', count: keys.length },
+          { key: 'ops', label: '安全运营态势', count: dbAssets.length },
           { key: 'audit', label: '巡检与审计', count: auditSeed.length },
         ]}
       />
@@ -303,6 +378,128 @@ export function DataSecurityHubPage() {
               )}
             </Card>
           </div>
+        </>
+      )}
+
+      {tab === 'protect' && (
+        <>
+          <div className="grid grid-2 mt-14">
+            <Card title="脱敏规则与任务" subtitle="分级—脱敏可验证 · 任务可重跑" noPad actions={
+              <Btn size="sm" icon="refresh" onClick={() => notify('脱敏任务列表已刷新')}>刷新</Btn>
+            }>
+              <div className="pad-h">
+                <DataTable rows={jobs} pageSize={6} columns={[
+                  { key: 'name', title: '任务', render: (r) => <div className="cell-main"><strong>{r.name}</strong><small>{r.id} · {r.scope}</small></div> },
+                  { key: 'strategy', title: '策略', width: 120, render: (r) => r.strategy },
+                  { key: 'status', title: '状态', width: 80, render: (r) => <Badge tone={r.status === '成功' ? 'green' : r.status === '运行中' ? 'blue' : 'red'} dot>{r.status}</Badge> },
+                  { key: 'last', title: '最近', width: 70, render: (r) => r.last },
+                  { key: 'ops', title: '操作', width: 70, render: (r) => (
+                    <button className="link-btn" onClick={() => rerunJob(r.id)}>重跑</button>
+                  ) },
+                ]} />
+              </div>
+            </Card>
+            <Card title="密钥管理" subtitle="主密钥 · 脱敏密钥 · 导出还原" noPad>
+              <div className="pad-h">
+                <DataTable rows={keys} pageSize={6} columns={[
+                  { key: 'name', title: '密钥', render: (r) => <div className="cell-main"><strong>{r.name}</strong><small>{r.id} · {r.kind}</small></div> },
+                  { key: 'holder', title: '持有', width: 110, render: (r) => r.holder },
+                  { key: 'status', title: '状态', width: 80, render: (r) => <Badge tone={r.status === '启用' ? 'green' : r.status === '轮换中' ? 'amber' : 'slate'} dot>{r.status}</Badge> },
+                  { key: 'ops', title: '操作', width: 70, render: (r) => (
+                    <button className="link-btn" onClick={() => rotateKey(r.id)}>轮换</button>
+                  ) },
+                ]} />
+              </div>
+            </Card>
+          </div>
+          <Card className="mt-14" title="分级—脱敏—密钥—审计闭环" subtitle="B12-02 验收">
+            <div className="publish-checks">
+              {[
+                ['分类分级', 'L1—L4 字段已打标', 'layers'],
+                ['脱敏任务', '动态/静态/API 三通道', 'eye'],
+                ['密钥管理', '签发·轮换·审批还原', 'key'],
+                ['审计留痕', '操作哈希防篡改', 'scroll'],
+                ['权限管控', '角色/IP/出口监管', 'shield'],
+                ['出口监管', '批量下载须审批', 'uploadcloud'],
+              ].map(([t, d, i]) => (
+                <div key={t}><span><Icon name={i} size={13} /></span><div><strong>{t}</strong><small>{d}</small></div></div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {tab === 'ops' && (
+        <>
+          <Card className="mt-14" title="数据库资产登记与发现" subtitle="B12-01 · AI 敏感识别联动" noPad actions={
+            <Btn size="sm" variant="primary" icon="sparkles" loading={discoverBusy} onClick={runDiscover}>发现 / AI 识别</Btn>
+          }>
+            <div className="pad-h">
+              <DataTable rows={dbAssets} pageSize={6} columns={[
+                { key: 'name', title: '数据库资产', render: (r) => <div className="cell-main"><strong>{r.name}</strong><small>{r.id} · {r.engine}</small></div> },
+                { key: 'sens', title: '敏感字段', width: 80, render: (r) => r.sens },
+                { key: 'owner', title: '责任人', width: 90, render: (r) => r.owner },
+                { key: 'status', title: '状态', width: 80, render: (r) => <Badge tone={r.status === '已登记' ? 'green' : r.status === '发现中' ? 'blue' : 'amber'} dot>{r.status}</Badge> },
+                { key: 'ops', title: '操作', width: 80, render: (r) => (
+                  <button className="link-btn" onClick={() => { setTab('classify'); notify(`${r.name} 敏感字段已打开`); }}>查看敏感</button>
+                ) },
+              ]} />
+            </div>
+          </Card>
+          <div className="grid grid-3 mt-14">
+            <Card title="资产安全态势" subtitle="库 / 表 / 字段">
+              <div className="ds-level-row">
+                {[['库', '5'], ['表', '1,286'], ['敏感字段', '2,840'], ['高风险', String(highRisk)]].map(([l, v]) => (
+                  <div key={l as string} className="ds-level"><strong>{v}</strong><small>{l}</small></div>
+                ))}
+              </div>
+            </Card>
+            <Card title="应用安全态势" subtitle="开放调用">
+              <div className="check-list">
+                {[
+                  ['已授权应用', '26', '通过'],
+                  ['今日越权拦截', '3', '预警'],
+                  ['密钥临期', '1', '预警'],
+                  ['API 限流触发', '12', '通过'],
+                ].map(([n, v, s]) => (
+                  <div key={n as string}>
+                    <span className={s === '通过' ? 'ok' : 'warn'}>{s === '通过' ? <Icon name="check" size={12} /> : <Icon name="alert" size={12} />}</span>
+                    <strong>{n}</strong>
+                    <em>{v}</em>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card title="人员安全态势" subtitle="高危操作">
+              <div className="check-list">
+                {[
+                  ['特权账号', '8', '通过'],
+                  ['今日导出审批', '5', '通过'],
+                  ['异常登录', '1', '预警'],
+                  ['待整改风险', String(highRisk), '预警'],
+                ].map(([n, v, s]) => (
+                  <div key={n as string}>
+                    <span className={s === '通过' ? 'ok' : 'warn'}>{s === '通过' ? <Icon name="check" size={12} /> : <Icon name="alert" size={12} />}</span>
+                    <strong>{n}</strong>
+                    <em>{v}</em>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+          <Card className="mt-14" title="统一安全日志" subtitle="资产发现 · 识别 · 访问 · 导出合流">
+            <div className="audit-feed">
+              {[
+                ['14:22', 'AI 识别', '发现 EMR 只读库新增敏感字段 12', '成功'],
+                ['14:18', '应用网关', '越权调用已拦截 /mpi/search', '阻断'],
+                ['14:12', '人员审计', '张敏 导出敏感清单 · 已审批', '成功'],
+                ['13:55', '资产发现', '科研沙箱待确认接入', '告警'],
+              ].map(([t, u, o, s]) => (
+                <div key={t + o}><span className="audit-time">{t}</span><div><strong>{u}</strong><small>{o}</small></div><Badge tone={s === '成功' ? 'green' : s === '阻断' ? 'red' : 'amber'}>{s}</Badge></div>
+              ))}
+            </div>
+            <Btn className="mt-14" icon="scroll" onClick={() => setTab('audit')}>进入巡检审计</Btn>
+          </Card>
         </>
       )}
 

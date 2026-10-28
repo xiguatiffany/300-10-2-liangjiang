@@ -229,57 +229,149 @@ export function CollectionWizard() {
   );
 }
 
+type PreviewField = {
+  name: string; cn: string; type: string; pk: boolean; null: boolean; std: string; desc: string;
+  level?: 'L1' | 'L2' | 'L3' | 'L4'; mask?: string; raw?: string; masked?: string;
+};
+
+const defaultFields: PreviewField[] = [
+  { name: 'patient_id', cn: '患者ID', type: 'varchar(32)', pk: true, null: false, std: 'DE-PAT-001', desc: '院内患者唯一标识', level: 'L1' },
+  { name: 'patient_name', cn: '患者姓名', type: 'varchar(64)', pk: false, null: false, std: 'DE-PAT-002', desc: '患者姓名（脱敏展示）', level: 'L2', mask: '姓+*', raw: '张敏', masked: '张*' },
+  { name: 'gender', cn: '性别代码', type: 'char(1)', pk: false, null: true, std: 'DE-GEN-001', desc: '1 男 / 2 女 / 9 未知', level: 'L1' },
+  { name: 'id_card_no', cn: '身份证号', type: 'varchar(18)', pk: false, null: true, std: 'DE-PAT-003', desc: '18 位身份证号码 · L3', level: 'L3', mask: '保留前4后4', raw: '500103199001011234', masked: '5001**********1234' },
+  { name: 'phone_no', cn: '联系电话', type: 'varchar(20)', pk: false, null: true, std: 'DE-PAT-005', desc: '手机号 · L3 脱敏', level: 'L3', mask: '中间4位*', raw: '13812345678', masked: '138****5678' },
+  { name: 'birth_date', cn: '出生日期', type: 'date', pk: false, null: true, std: 'DE-PAT-004', desc: '出生日期', level: 'L2' },
+  { name: 'dept_name', cn: '所属科室', type: 'varchar(64)', pk: false, null: true, std: 'DE-DEP-001', desc: '标准科室名称', level: 'L1' },
+  { name: 'create_time', cn: '建档时间', type: 'datetime', pk: false, null: false, std: 'DE-TIM-001', desc: '患者建档时间', level: 'L1' },
+];
+
+/** A3-05★ 数据预览：目录树 → 表 → 字段 → 样例 · 脱敏 · 血缘 */
 export function DataPreview() {
-  const { notify } = useApp();
+  const { go, notify } = useApp();
   const [schema, setSchema] = useState('ods_his');
   const [tableId, setTableId] = useState('ods_his_patient');
   const [tab, setTab] = useState('preview');
   const [q, setQ] = useState('');
-  const table = catalogTables.find((t) => t.id === tableId) || catalogTables[0];
-  const schemaDef = catalogSchemas.find((s) => s.name === schema) || catalogSchemas[0];
-  const fields = useMemo(() => [
-    { name: 'patient_id', cn: '患者ID', type: 'varchar(32)', pk: true, null: false, std: 'DE-PAT-001', desc: '院内患者唯一标识' },
-    { name: 'patient_name', cn: '患者姓名', type: 'varchar(64)', pk: false, null: false, std: 'DE-PAT-002', desc: '患者姓名（脱敏展示）' },
-    { name: 'gender', cn: '性别代码', type: 'char(1)', pk: false, null: true, std: 'DE-GEN-001', desc: '1 男 / 2 女 / 9 未知' },
-    { name: 'id_card_no', cn: '身份证号', type: 'varchar(18)', pk: false, null: true, std: 'DE-PAT-003', desc: '18 位身份证号码 · L3' },
-    { name: 'phone_no', cn: '联系电话', type: 'varchar(20)', pk: false, null: true, std: 'DE-PAT-005', desc: '手机号 · L3 脱敏' },
-    { name: 'birth_date', cn: '出生日期', type: 'date', pk: false, null: true, std: 'DE-PAT-004', desc: '出生日期' },
-    { name: 'dept_name', cn: '所属科室', type: 'varchar(64)', pk: false, null: true, std: 'DE-DEP-001', desc: '标准科室名称' },
-    { name: 'create_time', cn: '建档时间', type: 'datetime', pk: false, null: false, std: 'DE-TIM-001', desc: '患者建档时间' },
-  ], [tableId]);
+  const [treeQ, setTreeQ] = useState('');
+  const [maskOn, setMaskOn] = useState(true);
+  const [activeField, setActiveField] = useState<PreviewField | null>(defaultFields[3]);
+  const [chain, setChain] = useState<'tree' | 'table' | 'field' | 'sample'>('sample');
+
+  const table = catalogTables.find((t) => t.id === tableId) || catalogTables.find((t) => t.name === tableId.split('_').slice(1).join('_')) || catalogTables[0];
+  const fields = useMemo(() => defaultFields, []);
   const rows = previewRows.filter((r) => !q || r.join('').includes(q));
+  const maskedCols = new Set(['patient_name', 'id_card_no', 'phone_no', 'name']);
+
+  const filteredSchemas = useMemo(() => {
+    const qq = treeQ.trim().toLowerCase();
+    if (!qq) return catalogSchemas;
+    return catalogSchemas
+      .map((s) => ({ ...s, tables: s.tables.filter((t) => (s.name + s.label + t).toLowerCase().includes(qq)) }))
+      .filter((s) => (s.name + s.label).toLowerCase().includes(qq) || s.tables.length > 0);
+  }, [treeQ]);
+
+  const pickSchema = (name: string) => {
+    const s = catalogSchemas.find((x) => x.name === name) || catalogSchemas[0];
+    setSchema(s.name);
+    setTableId(s.tables[0]);
+    setChain('table');
+    setTab('schema');
+    notify(`已进入库 ${s.label} · 选择表查看结构`);
+  };
+
+  const pickTable = (id: string) => {
+    setTableId(id);
+    setChain('table');
+    setTab('preview');
+    notify(`已打开表 ${id} · 可切换表结构 / 样例 / 血缘`);
+  };
+
+  const pickField = (f: PreviewField) => {
+    setActiveField(f);
+    setChain('field');
+    setTab('schema');
+    notify(`字段 ${f.cn}（${f.name}）${f.mask ? ' · 已绑定脱敏' : ''}`);
+  };
+
+  const showSample = () => {
+    setChain('sample');
+    setTab('preview');
+    notify('样例数据已加载 · 敏感字段按 L3 脱敏展示');
+  };
 
   return (
     <>
-      <PageHeader eyebrow="LAKEHOUSE DATA PREVIEW" title="数据预览" desc="查看湖仓所有数据表、表结构与数据明细；敏感字段自动脱敏，字段可追溯血缘与标准。" actions={<><Btn icon="download" onClick={() => notify('数据预览导出需审批，已提交申请')}>导出</Btn><Btn variant="primary" icon="refresh" onClick={() => notify('元数据已刷新')}>刷新元数据</Btn></>} />
-      <div className="preview-layout">
+      <PageHeader
+        eyebrow="LAKEHOUSE DATA PREVIEW · A3-05 ★"
+        title="数据预览"
+        desc="验收：目录树 → 表 → 字段 → 样例数据全链路；敏感字段自动脱敏，可切换血缘追溯。"
+        actions={
+          <>
+            <Btn icon="code" onClick={() => go('/bid/data-query')}>打开数据查询</Btn>
+            <Btn icon="download" onClick={() => notify('数据预览导出需审批，已提交申请')}>导出</Btn>
+            <Btn variant="primary" icon="refresh" onClick={() => notify('元数据已刷新')}>刷新元数据</Btn>
+          </>
+        }
+      />
+
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '目录树', d: '库/表层可检索', on: chain === 'tree' },
+          { n: '02', t: '选表', d: '元数据与质量', on: chain === 'table' },
+          { n: '03', t: '字段', d: '标准·分级·脱敏', on: chain === 'field' },
+          { n: '04', t: '样例', d: '脱敏明细可验', on: chain === 'sample' },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> 脱敏 {maskOn ? '开' : '关'} · L3 字段 {fields.filter((f) => f.level === 'L3').length}</span>
+      </div>
+
+      <div className="preview-layout mt-14">
         <aside className="preview-tree">
           <div className="pt-head"><span><Icon name="database" size={14} /> 湖仓目录</span><Badge tone="green" dot>已连接</Badge></div>
-          <div className="pt-search"><Icon name="search" size={13} /><input placeholder="搜索库表" /></div>
+          <div className="pt-search"><Icon name="search" size={13} /><input value={treeQ} onChange={(e) => { setTreeQ(e.target.value); setChain('tree'); }} placeholder="搜索库表" /></div>
           <div className="pt-body">
-            {catalogSchemas.map((s) => (
+            {filteredSchemas.map((s) => (
               <div key={s.name} className="pt-group">
-                <button className={`pt-schema ${schema === s.name ? 'is-active' : ''}`} onClick={() => { setSchema(s.name); setTableId(`${s.name}_${s.tables[0]}`.replace(/^(\w+)_\1_/, '$1_')); }}>
+                <button className={`pt-schema ${schema === s.name ? 'is-active' : ''}`} onClick={() => pickSchema(s.name)}>
                   <Icon name="chevron" size={11} /><Icon name="database" size={12} /><span>{s.label}</span><em>{s.count}</em>
                 </button>
                 {schema === s.name && (
                   <div className="pt-tables">
-                    {s.tables.map((t) => (
-                      <button key={t} className={`pt-table ${tableId === t ? 'is-active' : ''}`} onClick={() => setTableId(t)}><Icon name="table" size={11} /><span>{t}</span></button>
+                    {(treeQ ? s.tables : (catalogSchemas.find((x) => x.name === s.name)?.tables || s.tables)).map((t) => (
+                      <button key={t} className={`pt-table ${tableId === t ? 'is-active' : ''}`} onClick={() => pickTable(t)}>
+                        <Icon name="table" size={11} /><span>{t}</span>
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
             ))}
           </div>
-          <div className="pt-foot"><Icon name="shield" size={12} /> 已应用数据权限：全院 · 脱敏 4 字段</div>
+          <div className="pt-foot"><Icon name="shield" size={12} /> 数据权限：全院 · 脱敏 {fields.filter((f) => !!f.mask).length} 字段</div>
         </aside>
 
         <div className="preview-main">
           <div className="preview-meta">
             <div className="pm-title">
               <span className={`layer-mark ${table.layer.toLowerCase()}`}>{table.layer}</span>
-              <div><h2>{table.cn}<Badge tone="green" dot>已认证</Badge></h2><span>{table.schema}.{table.name} · 负责人 {table.owner} · 更新于 {table.updated}</span></div>
+              <div>
+                <h2>{table.cn}<Badge tone="green" dot>已认证</Badge></h2>
+                <span className="preview-crumb">
+                  <button type="button" className="link-btn" onClick={() => setChain('tree')}>{table.schema}</button>
+                  <Icon name="chevronright" size={11} />
+                  <button type="button" className="link-btn" onClick={() => setChain('table')}>{table.name}</button>
+                  {activeField && (<><Icon name="chevronright" size={11} /><button type="button" className="link-btn" onClick={() => setChain('field')}>{activeField.name}</button></>)}
+                  <span> · {table.owner} · {table.updated}</span>
+                </span>
+              </div>
             </div>
             <div className="pm-stats">
               <div><span>数据行数</span><strong>{table.rows}</strong></div>
@@ -287,41 +379,119 @@ export function DataPreview() {
               <div><span>质量得分</span><strong className="text-green">{table.quality}</strong></div>
               <div><span>安全级别</span><strong>L3</strong></div>
             </div>
-            <div className="pm-actions"><Btn size="sm" icon="download" onClick={() => notify('导出申请已提交')}>导出</Btn><Btn size="sm" icon="code" onClick={() => notify('已生成查询 SQL，可在数据查询中打开', 'info')}>查询</Btn></div>
+            <div className="pm-actions">
+              <Btn size="sm" variant={maskOn ? 'secondary' : 'ghost'} icon="eye" onClick={() => { setMaskOn((v) => !v); notify(maskOn ? '已关闭脱敏（仅演示对照）' : '已恢复 L3 脱敏展示'); }}>
+                {maskOn ? '脱敏开' : '脱敏关'}
+              </Btn>
+              <Btn size="sm" icon="download" onClick={() => notify('导出申请已提交')}>导出</Btn>
+              <Btn size="sm" variant="primary" icon="play" onClick={showSample}>加载样例</Btn>
+            </div>
           </div>
           <div className="tag-row">{table.tags.map((t) => <Badge key={t} tone="slate">{t}</Badge>)}<Badge tone="amber">L3 · 含个人敏感信息</Badge></div>
           <div className="preview-tabs">
-            <Tabs variant="line" value={tab} onChange={setTab} items={[{ key: 'preview', label: '数据预览' }, { key: 'schema', label: '表结构', count: fields.length }, { key: 'lineage', label: '字段血缘' }, { key: 'history', label: '变更记录' }]} />
+            <Tabs variant="line" value={tab} onChange={(k) => { setTab(k); if (k === 'preview') setChain('sample'); if (k === 'schema') setChain('field'); }} items={[
+              { key: 'preview', label: '样例数据' },
+              { key: 'schema', label: '表结构', count: fields.length },
+              { key: 'lineage', label: '字段血缘' },
+              { key: 'history', label: '变更记录' },
+            ]} />
             <div className="filter-bar"><SearchInput value={q} onChange={setQ} placeholder="筛选预览数据" width={190} /><Btn size="sm" icon="filter" onClick={() => notify('高级筛选已打开', 'info')}>筛选</Btn></div>
           </div>
           {tab === 'preview' && (
             <div className="preview-table">
-              <div className="preview-note"><Icon name="eye" size={13} /><span>当前以“数据分析师”角色查看，身份证、手机号、姓名已按 L3 规则脱敏；导出需审批。</span><span className="preview-count">预览 100 行 · 共 {table.rows} 行</span></div>
+              <div className="preview-note">
+                <Icon name="eye" size={13} />
+                <span>角色：数据分析师 · 身份证/手机号/姓名按 L3 {maskOn ? '已脱敏' : '明文对照（演示）'}；导出需审批。</span>
+                <span className="preview-count">预览 {rows.length} 行 · 共 {table.rows} 行</span>
+              </div>
               <div className="table-wrap">
                 <table className="data-table preview-data-table">
-                  <thead><tr><th>#</th>{previewColumns.map((c) => <th key={c.key}>{c.label}{c.pk && <span className="pk-tag">PK</span>}<small className="col-type">{c.type}</small></th>)}</tr></thead>
-                  <tbody>{rows.map((r, i) => <tr key={i}>{[i + 1, ...r].map((v, j) => <td key={j} className={j === 1 ? 'mono-cell' : ''}>{v}</td>)}</tr>)}</tbody>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      {previewColumns.map((c) => (
+                        <th key={c.key} className={maskedCols.has(c.key) ? 'is-masked-col' : ''}>
+                          <button type="button" className="link-btn" onClick={() => {
+                            const f = fields.find((x) => x.name === c.key) || fields[0];
+                            pickField(f);
+                          }}>{c.label}</button>
+                          {c.pk && <span className="pk-tag">PK</span>}
+                          {maskedCols.has(c.key) && <Badge tone="amber">脱敏</Badge>}
+                          <small className="col-type">{c.type}</small>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, i) => (
+                      <tr key={i}>
+                        <td>{i + 1}</td>
+                        {r.map((v, j) => {
+                          const col = previewColumns[j]?.key;
+                          const f = fields.find((x) => x.name === col);
+                          const show = !maskOn && f?.raw ? f.raw : v;
+                          return <td key={j} className={j === 0 ? 'mono-cell' : ''}>{show}</td>;
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
               <div className="table-foot"><span className="table-count">共 {table.rows} 行 · 当前展示 {rows.length} 行</span><div className="pager"><button disabled>上一页</button><button className="is-active">1</button><button>2</button><button>3</button><button>下一页</button></div></div>
             </div>
           )}
           {tab === 'schema' && (
-            <div className="preview-schema">
-              <table className="data-table"><thead><tr><th>序号</th><th>字段名</th><th>中文名</th><th>类型</th><th>主键</th><th>非空</th><th>关联标准</th><th>说明</th></tr></thead><tbody>
-                {fields.map((f, i) => <tr key={f.name}><td className="muted">{i + 1}</td><td className="mono-cell">{f.name}{f.pk && <span className="pk-tag">PK</span>}</td><td>{f.cn}</td><td className="mono-cell">{f.type}</td><td>{f.pk ? <Badge tone="amber">主键</Badge> : '—'}</td><td>{f.null ? '—' : <Icon name="check" size={12} className="text-green" />}</td><td><Badge tone="blue">{f.std}</Badge></td><td className="muted">{f.desc}</td></tr>)}
-              </tbody></table>
+            <div className="preview-schema grid grid-2-1">
+              <table className="data-table">
+                <thead><tr><th>序号</th><th>字段名</th><th>中文名</th><th>类型</th><th>分级</th><th>标准</th><th>说明</th></tr></thead>
+                <tbody>
+                  {fields.map((f, i) => (
+                    <tr key={f.name} className={activeField?.name === f.name ? 'is-active-row' : ''} onClick={() => pickField(f)} style={{ cursor: 'pointer' }}>
+                      <td className="muted">{i + 1}</td>
+                      <td className="mono-cell">{f.name}{f.pk && <span className="pk-tag">PK</span>}</td>
+                      <td>{f.cn}</td>
+                      <td className="mono-cell">{f.type}</td>
+                      <td><Badge tone={f.level === 'L3' || f.level === 'L4' ? 'amber' : 'slate'}>{f.level || 'L1'}</Badge></td>
+                      <td><Badge tone="blue">{f.std}</Badge></td>
+                      <td className="muted">{f.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Card title="字段详情" subtitle={activeField ? activeField.cn : '点选字段'}>
+                {activeField ? (
+                  <>
+                    <KeyValue cols={1} items={[
+                      { label: '字段名', value: activeField.name },
+                      { label: '类型', value: activeField.type },
+                      { label: '安全分级', value: activeField.level || 'L1' },
+                      { label: '标准编码', value: activeField.std },
+                      { label: '脱敏策略', value: activeField.mask || '不脱敏' },
+                    ]} />
+                    {activeField.mask && (
+                      <div className="mask-list mt-14">
+                        <div><div><strong>明文样例</strong><small>{activeField.raw}</small></div></div>
+                        <div><div><strong>脱敏结果</strong><small>{activeField.masked}</small></div></div>
+                      </div>
+                    )}
+                    <Btn className="mt-14 w-full" variant="primary" icon="play" onClick={showSample}>查看样例数据</Btn>
+                  </>
+                ) : <div className="empty-hint">请选择字段</div>}
+              </Card>
             </div>
           )}
           {tab === 'lineage' && (
             <div className="preview-lineage">
               <LineageGraph height={360} nodes={[
                 { id: 'src', label: 'HIS 生产库', sub: 'dbo.PATIENT', type: 'source', x: 30, y: 150, w: 160 },
-                { id: 'ods', label: 'ods_his.patient', sub: 'ODS 贴源表', type: 'ods', x: 260, y: 150, w: 170 },
+                { id: 'ods', label: `${table.schema}.${table.name}`, sub: 'ODS 贴源表', type: 'ods', x: 260, y: 150, w: 170 },
                 { id: 'dwd', label: 'dwd.dim_patient', sub: 'DWD 维度表', type: 'model', x: 500, y: 150, w: 170 },
                 { id: 'ind', label: '患者主索引', sub: '主数据服务', type: 'indicator', x: 740, y: 80, w: 150 },
                 { id: 'tag', label: '居民标签', sub: '标签中心', type: 'app', x: 740, y: 220, w: 150 },
               ]} edges={[{ from: 'src', to: 'ods' }, { from: 'ods', to: 'dwd' }, { from: 'dwd', to: 'ind' }, { from: 'dwd', to: 'tag' }]} />
+              <div className="info-note mt-14"><Icon name="network" size={13} /><span>字段级血缘：点表结构字段可对照标准编码；完整图谱见依赖/血缘页。</span>
+                <button className="link-btn" onClick={() => go('/center/graph')}>打开图谱</button>
+              </div>
             </div>
           )}
           {tab === 'history' && (

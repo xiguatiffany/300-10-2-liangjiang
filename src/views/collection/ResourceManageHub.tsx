@@ -114,6 +114,10 @@ export function ResourceManageHubPage() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [demandOpen, setDemandOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [doneCatalog, setDoneCatalog] = useState(false);
+  const [doneSupply, setDoneSupply] = useState(false);
+  const [doneAssess, setDoneAssess] = useState(false);
 
   const filteredCat = useMemo(() => catalog.filter((c) =>
     (!catKind || c.kind === catKind)
@@ -141,6 +145,7 @@ export function ResourceManageHubPage() {
       if (c.id !== id) return c;
       return { ...c, status: ok ? '已发布' : '草稿', updated: '08-06' };
     }));
+    if (ok) setDoneCatalog(true);
     notify(ok ? `${id} 审核通过并发布上线` : `${id} 已退回草稿`);
   };
 
@@ -151,6 +156,7 @@ export function ResourceManageHubPage() {
       const next = demandFlow[Math.min(i + 1, demandFlow.length - 1)];
       return { ...d, status: next };
     }));
+    setDoneSupply(true);
     notify(`${id} 已推进至下一状态`);
   };
 
@@ -159,7 +165,29 @@ export function ResourceManageHubPage() {
     setTab('assess');
     await new Promise((r) => setTimeout(r, 800));
     setReportBusy(false);
+    setDoneAssess(true);
     notify('资产评估报告已生成（PDF）· 含热度/广度/时效/质量四维');
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('catalog');
+    const pending = catalog.find((c) => c.status === '待审核') || catalog.find((c) => c.status === '草稿');
+    if (pending) {
+      if (pending.status === '草稿') submitCatalog(pending.id);
+      await new Promise((r) => setTimeout(r, 350));
+      approveCatalog(pending.id, true);
+    } else setDoneCatalog(true);
+    notify('① 编目—审核—发布闭环');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('supply');
+    const open = demands.find((d) => d.status !== '已关闭') || demands[0];
+    if (open) advanceDemand(open.id);
+    notify('② 供需需求全生命周期可追溯');
+    await new Promise((r) => setTimeout(r, 400));
+    await exportReport();
+    notify('③ 资产评估报告已输出');
+    setDemoing(false);
   };
 
   return (
@@ -167,11 +195,10 @@ export function ResourceManageHubPage() {
       <PageHeader
         eyebrow="DATA RESOURCE MANAGEMENT · A7"
         title="数据资源管理"
-        desc="A7-01 编目—审核—发布 · A7-02 系统清单与供需全生命周期 · A7-03 热度/广度/时效/质量评估与报告。"
+        desc="验收：编目—审核—发布 → 供需全生命周期 → 资产评估报告。"
         actions={
           <>
-            <Btn icon="layers" onClick={() => go('/bid/asset-management')}>资产管理</Btn>
-            <Btn icon="building" onClick={() => go('/collection/governance-service')}>治理服务</Btn>
+            <Btn icon="zap" loading={demoing || reportBusy} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="plus" onClick={() => { setTab('catalog'); setCatalogOpen(true); }}>新建编目</Btn>
             <Btn variant="primary" icon="download" loading={reportBusy} onClick={exportReport}>导出评估报告</Btn>
           </>
@@ -180,12 +207,12 @@ export function ResourceManageHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '资源编目', d: '编目→审核→发布' },
-          { n: '02', t: '供需对接', d: '需求全生命周期' },
-          { n: '03', t: '资产评估', d: '四维评分·报告' },
+          { n: '01', t: '资源编目', d: '编目→审核→发布', on: doneCatalog || tab === 'catalog' },
+          { n: '02', t: '供需对接', d: '需求全生命周期', on: doneSupply || tab === 'supply' },
+          { n: '03', t: '资产评估', d: '四维评分·报告', on: doneAssess || tab === 'assess' },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'catalog' : i === 1 ? 'supply' : 'assess') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -193,7 +220,7 @@ export function ResourceManageHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 已发布 {published} · 待审 {pendingCat}</span>
+        <span className="live-badge"><i /> {doneAssess ? '报告已输出' : doneSupply ? '需求已推进' : doneCatalog ? '编目已发布' : `已发布 ${published} · 待审 ${pendingCat}`}</span>
       </div>
 
       <div className="stat-grid mt-14">

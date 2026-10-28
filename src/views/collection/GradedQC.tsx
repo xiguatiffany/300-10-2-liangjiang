@@ -66,6 +66,8 @@ const toneOf = (s: string) => {
 };
 
 /** A5-02 分级质控：开发预校验 + DWD 五维实时质控 */
+type AcceptPhase = 'rules' | 'realtime' | 'errors';
+
 export function GradedQCPage() {
   const { go, notify } = useApp();
   const [tab, setTab] = useState<TabKey>('overview');
@@ -74,9 +76,14 @@ export function GradedQCPage() {
   const [dimFilter, setDimFilter] = useState<string>('all');
   const [q, setQ] = useState('');
   const [running, setRunning] = useState(false);
+  const [demoing, setDemoing] = useState(false);
   const [activeErr, setActiveErr] = useState<QcError | null>(null);
   const [ruleOpen, setRuleOpen] = useState(false);
   const [activeDim, setActiveDim] = useState<DimKey | null>(null);
+  const [phase, setPhase] = useState<AcceptPhase>('rules');
+  const [rulesOk, setRulesOk] = useState(false);
+  const [realtimeOk, setRealtimeOk] = useState(false);
+  const [errorsOk, setErrorsOk] = useState(false);
 
   const filteredErrors = useMemo(() => errors.filter((e) =>
     (dimFilter === 'all' || e.dim === dimFilter)
@@ -91,12 +98,14 @@ export function GradedQCPage() {
   const runPrecheck = async () => {
     setRunning(true);
     setTab('precheck');
+    setPhase('rules');
     setPreRules((arr) => arr.map((r) => ({ ...r, status: '未执行' })));
     for (let i = 0; i < preRulesSeed.length; i++) {
       await new Promise((r) => setTimeout(r, 280));
       setPreRules((arr) => arr.map((r, idx) => (idx === i ? { ...r, status: preRulesSeed[i].status } : r)));
     }
     setRunning(false);
+    setRulesOk(true);
     const blocked = preRulesSeed.some((r) => r.status === '阻断');
     notify(blocked ? '预校验完成：存在阻断项，禁止发布到 DWD' : '预校验完成：可进入 DWD 实时质控', blocked ? 'error' : 'success');
   };
@@ -104,6 +113,7 @@ export function GradedQCPage() {
   const runDwd = async () => {
     setRunning(true);
     setTab('dwd');
+    setPhase('realtime');
     notify('DWD 五维实时质控执行中…', 'info');
     await new Promise((r) => setTimeout(r, 900));
     const stamp = new Date();
@@ -121,26 +131,59 @@ export function GradedQCPage() {
     };
     setErrors((e) => [row, ...e].slice(0, 20));
     setRunning(false);
+    setRealtimeOk(true);
+    setPhase('errors');
+    setErrorsOk(true);
     setTab('errors');
+    setActiveErr(row);
     notify('DWD 实时质控完成：新增异常已写入错误明细');
+  };
+
+  const demoAccept = async () => {
+    if (running || demoing) return;
+    setDemoing(true);
+    await runPrecheck();
+    notify('① 五维规则预校验完成');
+    await new Promise((r) => setTimeout(r, 350));
+    await runDwd();
+    notify('②③ 实时结果 + 错误明细下钻完成');
+    setDemoing(false);
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="GRADED QUALITY CONTROL"
+        eyebrow="GRADED QUALITY CONTROL · A5-02"
         title="分级质控"
-        desc="开发阶段预校验 + DWD 层五维实时质控（有效性 / 规范性 / 合规性 / 一致性 / 完整性）。验收：五维规则、实时结果、错误明细。"
+        desc="验收：五维规则 → 实时结果 → 错误明细；开发预校验 + DWD 层五维实时质控。"
         actions={
           <>
-            <Btn icon="workflow" onClick={() => go('/collection/qc-designer')}>★ 质控可视化流程</Btn>
+            <Btn icon="zap" loading={demoing || running} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="play" loading={running} onClick={runPrecheck}>运行预校验</Btn>
-            <Btn variant="primary" icon="zap" loading={running} onClick={runDwd}>DWD 实时质控</Btn>
+            <Btn variant="primary" icon="activity" loading={running} onClick={runDwd}>DWD 实时质控</Btn>
           </>
         }
       />
 
-      <Card className="mt-0" title="两级质控路径" subtitle="先预校验，再入 DWD 实时检">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '五维规则', d: '预校验 · 规则集', k: 'rules' as const, on: rulesOk },
+          { n: '02', t: '实时结果', d: 'DWD 流式执行', k: 'realtime' as const, on: realtimeOk },
+          { n: '03', t: '错误明细', d: '字段 · 样例下钻', k: 'errors' as const, on: errorsOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${phase === s.k || s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {errorsOk ? '明细已下钻' : realtimeOk ? '实时完成' : rulesOk ? '规则已跑' : '待验收'}</span>
+      </div>
+
+      <Card className="mt-14" title="两级质控路径" subtitle="先预校验，再入 DWD 实时检">
         <div className="gqc-path">
           <button type="button" className={`gqc-stage${tab === 'precheck' ? ' is-on' : ''}`} onClick={() => setTab('precheck')}>
             <span className="gqc-ico tone-blue"><Icon name="terminal" size={16} /></span>

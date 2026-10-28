@@ -11,6 +11,7 @@ import { cdcEvents as seedEvents, delaySeries, realtimeChannels } from '../../da
 type TabKey = 'realtime' | 'offline' | 'doris' | 'sources';
 type CdcRow = [string, string, string, string, string, string];
 type LakeRow = { pk: string; name: string; phone: string; op: string; ts: string; synced: boolean };
+type AcceptPhase = 'mutate' | 'capture' | 'lake' | 'verify';
 
 const offlineJobs = [
   { id: 'OL-01', name: 'HIS 全量入湖', source: 'HIS 生产库', target: 'ods_his.*', schedule: '每日 02:00', status: '成功', rows: '12.8M', last: '08-06 02:40' },
@@ -65,6 +66,11 @@ export function RealtimeChannel() {
   const [pulsing, setPulsing] = useState(false);
   const [activeEvent, setActiveEvent] = useState<CdcRow | null>(null);
   const [detailTab, setDetailTab] = useState<'lake' | 'events' | 'delay'>('lake');
+  const [phase, setPhase] = useState<AcceptPhase>('mutate');
+  const [captured, setCaptured] = useState(false);
+  const [laked, setLaked] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [lastPk, setLastPk] = useState('');
 
   const active = channels.find((c) => c.id === activeId) || channels[0];
 
@@ -91,6 +97,12 @@ export function RealtimeChannel() {
     notify(cur?.status === '运行中' ? '通道已暂停' : '通道已启动');
   };
 
+  const verifyLake = () => {
+    setTab('realtime'); setDetailTab('lake'); setPhase('verify'); setVerified(true);
+    const hit = lakeRows.find((r) => r.pk === lastPk) || lakeRows[0];
+    notify(hit ? `核对通过：湖表可见 ${hit.op} · pk=${hit.pk}` : '湖表已同步，可继续查询');
+  };
+
   const simulateCdc = async () => {
     if (simBusy || active.status === '已暂停') {
       if (active.status === '已暂停') notify('请先启动通道', 'error');
@@ -99,10 +111,13 @@ export function RealtimeChannel() {
     setSimBusy(true);
     setPulsing(true);
     setTab('realtime');
-    setDetailTab('lake');
+    setDetailTab('events');
+    setPhase('mutate');
+    setCaptured(false); setLaked(false); setVerified(false);
     const now = new Date();
     const stamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
     const pk = `10024${8000 + Math.floor(Math.random() * 900)}`;
+    setLastPk(pk);
     const ops: Array<{ op: string; content: string; name: string; phone: string }> = [
       { op: 'INSERT', content: '新增患者主索引', name: '演示患者甲', phone: '138****9901' },
       { op: 'UPDATE', content: '更新联系电话', name: '王志远', phone: '139****0008' },
@@ -110,6 +125,7 @@ export function RealtimeChannel() {
     ];
     for (const step of ops) {
       await new Promise((r) => setTimeout(r, 480));
+      setPhase('capture'); setCaptured(true);
       const row: CdcRow = [stamp, step.op, 'patient', step.op === 'UPDATE' ? '100248518' : pk, step.content, '成功'];
       setEvents((e) => [row, ...e].slice(0, 20));
       if (step.op !== 'DELETE') {
@@ -121,35 +137,57 @@ export function RealtimeChannel() {
       } else {
         setLakeRows((rows) => rows.map((x) => (x.pk === '100248310' ? { ...x, op: 'DELETE', synced: true, ts: stamp.slice(0, 8) } : x)));
       }
+      setPhase('lake'); setLaked(true); setDetailTab('lake');
       setLive((l) => ({ ...l, rows: l.rows + 1, qps: l.qps + 3 }));
     }
     setSimBusy(false);
     window.setTimeout(() => setPulsing(false), 1600);
-    notify('数据已沿桑基链路流入湖表，可在右侧预览核对');
+    notify('①增删改已捕获 → ②湖表可查，点击「核对湖表」完成验收');
+    verifyLake();
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="DATA CHANNEL · FLOW MAP"
+        eyebrow="DATA CHANNEL · A4-07 ★"
         title="数据通道"
-        desc="用流动图看懂：业务库 → CDC/离线捕获 → 湖仓 → 查询 / Doris。带宽表示流量，高亮表示当前通道。"
+        desc="验收：源端增删改 → CDC 捕获 → 湖表可查核对；覆盖离线入湖、Doris 导出与多类数据源。"
         actions={
           <>
             <Btn icon="play" loading={simBusy} onClick={simulateCdc}>演示：源端增删改入湖</Btn>
-            <Btn icon="search" onClick={() => go('/collection/query')}>★ 去查询</Btn>
+            <Btn icon="checkcircle" onClick={verifyLake} disabled={!laked}>核对湖表</Btn>
+            <Btn icon="search" onClick={() => go('/bid/data-query')}>去查询</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新建通道</Btn>
           </>
         }
       />
 
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '源端增删改', d: 'INSERT/UPDATE/DELETE', k: 'mutate' as const, on: true },
+          { n: '02', t: 'CDC 捕获', d: 'Kafka / Flink', k: 'capture' as const, on: captured },
+          { n: '03', t: '湖表可查', d: 'ODS 实时可见', k: 'lake' as const, on: laked },
+          { n: '04', t: '核对查询', d: 'pk 对齐验证', k: 'verify' as const, on: verified },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${phase === s.k || s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {verified ? `已核对 ${lastPk || '湖表'}` : pulsing || simBusy ? '同步演示中' : '链路待命'} · 延迟 {live.delay}s</span>
+      </div>
+
       <Card
-        className="mt-0 channel-flow-card"
+        className="mt-14 channel-flow-card"
         title="数据怎么流动"
         subtitle="源端 → 捕获 → 湖表 → 查询 / Doris · 点击节点切换通道"
         actions={
           <>
-            <Badge tone={pulsing || simBusy ? 'blue' : 'green'} dot>{pulsing || simBusy ? '同步演示中' : '链路正常'}</Badge>
+            <Badge tone={pulsing || simBusy ? 'blue' : verified ? 'green' : 'green'} dot>{pulsing || simBusy ? '同步演示中' : verified ? '验收通过' : '链路正常'}</Badge>
             <span className="muted xs mono-cell">{active.source} → {active.target}</span>
           </>
         }
@@ -159,7 +197,7 @@ export function RealtimeChannel() {
           pulsing={pulsing || simBusy}
           onSelectChannel={(id) => { setActiveId(id); setTab('realtime'); }}
           onSelectStage={(stage) => {
-            if (stage === 'query') go('/collection/query');
+            if (stage === 'query') go('/bid/data-query');
             else setTab(stage);
           }}
         />

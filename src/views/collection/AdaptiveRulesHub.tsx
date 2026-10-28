@@ -128,6 +128,9 @@ export function AdaptiveRulesHubPage() {
   const [pushing, setPushing] = useState(false);
   const [traces, setTraces] = useState(seedTraces);
   const [reportNote, setReportNote] = useState('聚焦 P1 根因与待确认规则，推送治理办与机构信息科。');
+  const [demoing, setDemoing] = useState(false);
+  const [ruleOk, setRuleOk] = useState(false);
+  const [reportOk, setReportOk] = useState(false);
 
   const doc = knowledgeDocs.find((d) => d.name === docName) || knowledgeDocs[0];
 
@@ -214,16 +217,28 @@ export function AdaptiveRulesHubPage() {
     notify(`${target.id} 已推送 · 审计已落库`);
   };
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    await parseGuide();
+    confirmRule('AR-01', true);
+    setRuleOk(true);
+    notify('① 规则建议已人工确认');
+    await generateReport();
+    await pushReport();
+    setReportOk(true);
+    notify('② 报告可追溯 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
         eyebrow="ADAPTIVE RULES · SMART REPORT · A5-05"
         title="自适应规则 / 智能报告"
-        desc="LLM 解析指南生成规则 · 人工确认后下发 · 自动根因摘要 · 多维报告与整改优先级 · 消息推送可追溯。"
+        desc="验收：规则建议可人工确认，报告可追溯。"
         actions={
           <>
-            <Btn icon="dashboard" onClick={() => go('/collection/qc-governance')}>★ 治理大屏</Btn>
-            <Btn icon="book" onClick={() => go('/collection/qc-governance')}>知识库</Btn>
+            <Btn icon="zap" loading={demoing || parsing || genReport} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="sparkles" loading={parsing} onClick={parseGuide}>解析指南</Btn>
             <Btn variant="primary" icon="file" loading={genReport} onClick={generateReport}>生成智能报告</Btn>
           </>
@@ -232,12 +247,12 @@ export function AdaptiveRulesHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '规则建议', d: 'LLM 生成 · 人工确认' },
-          { n: '02', t: '根因摘要', d: '自动聚类 · 证据链' },
-          { n: '03', t: '报告追溯', d: '多维报告 · 推送留痕' },
+          { n: '01', t: '规则建议', d: 'LLM · 人工确认', on: ruleOk || confirmed > 0 },
+          { n: '02', t: '根因摘要', d: '聚类 · 证据链', on: tab === 'rootcause' || ruleOk },
+          { n: '03', t: '报告追溯', d: '推送留痕', on: reportOk },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'rules' : i === 1 ? 'rootcause' : 'report') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -245,7 +260,7 @@ export function AdaptiveRulesHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 待确认 {pending} · 已确认 {confirmed}</span>
+        <span className="live-badge"><i /> {reportOk ? '报告可追溯' : `待确认 ${pending} · 已确认 ${confirmed}`}</span>
       </div>
 
       <div className="stat-grid mt-14">

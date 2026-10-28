@@ -90,6 +90,7 @@ export function SmartQCPage() {
   const [llmText, setLlmText] = useState(scenes[0].sample);
   const [llmOut, setLlmOut] = useState<{ finding: string; entities: string[]; conf: number } | null>(null);
   const [kbQ, setKbQ] = useState('');
+  const [demoScenes, setDemoScenes] = useState(0);
 
   const kbRows = useMemo(() => knowledgeDocs.filter((d) =>
     (d.name + d.type + d.owner).toLowerCase().includes(kbQ.toLowerCase())
@@ -121,8 +122,10 @@ export function SmartQCPage() {
 
   const runDemoAll = async () => {
     setTab('scenes');
-    for (const s of scenes) {
-      await runScene(s);
+    setDemoScenes(0);
+    for (let i = 0; i < scenes.length; i++) {
+      await runScene(scenes[i]);
+      setDemoScenes(i + 1);
       await new Promise((r) => setTimeout(r, 400));
     }
     setTab('cluster');
@@ -132,19 +135,35 @@ export function SmartQCPage() {
   return (
     <>
       <PageHeader
-        eyebrow="SMART QC · MULTIMODAL"
+        eyebrow="SMART QC · MULTIMODAL · A5-03"
         title="智能质控与多模态"
-        desc="规则知识库匹配 · 异常树/聚类 · 逻辑知识库 + LLM 解析临床文本并交叉校验。验收：至少 3 类文本质控场景可演示。"
+        desc="验收：至少 3 类文本质控场景可演示（病历 / 检验 / 影像）。"
         actions={
           <>
             <Btn icon="book" onClick={() => go('/bid/knowledge')}>★ 质控知识库</Btn>
             <Btn icon="shieldalert" onClick={() => go('/collection/graded-qc')}>分级质控</Btn>
-            <Btn variant="primary" icon="play" loading={running} onClick={runDemoAll}>演示 3 类场景</Btn>
+            <Btn variant="primary" icon="zap" loading={running} onClick={runDemoAll}>演示验收</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '病历文本', d: '诊断交叉', on: demoScenes >= 1 },
+          { n: '02', t: '检验报告', d: '危急值', on: demoScenes >= 2 },
+          { n: '03', t: '影像所见', d: '极性冲突', on: demoScenes >= 3 },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {demoScenes >= 3 ? '3 类场景完成' : `已演 ${demoScenes}/3`}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="文本场景" value="3" unit="类" delta="病历 / 检验 / 影像" icon="file" tone="blue" onClick={() => setTab('scenes')} />
         <StatCard label="异常聚类" value={String(clusters.length)} unit="簇" delta="自动根因建议" icon="git" tone="violet" onClick={() => setTab('cluster')} />
         <StatCard label="知识条目" value={String(knowledgeDocs.length)} unit="份" delta="可匹配规则" icon="book" tone="green" onClick={() => setTab('kb')} />

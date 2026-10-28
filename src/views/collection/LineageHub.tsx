@@ -88,6 +88,8 @@ const deps = [
 const toneLevel = (l: string) => (l === '高' ? 'red' : l === '中' ? 'amber' : 'slate');
 
 /** A5-01 依赖 / 血缘 / 数据追溯 */
+type AcceptPhase = 'field' | 'impact';
+
 export function LineageHubPage() {
   const { go, notify } = useApp();
   const [tab, setTab] = useState<TabKey>('table');
@@ -96,6 +98,10 @@ export function LineageHubPage() {
   const [q, setQ] = useState('');
   const [fieldFocus, setFieldFocus] = useState('dwd_fact_visit');
   const [impactOpen, setImpactOpen] = useState<ImpactItem | null>(null);
+  const [phase, setPhase] = useState<AcceptPhase>('field');
+  const [fieldOk, setFieldOk] = useState(false);
+  const [impactOk, setImpactOk] = useState(false);
+  const [demoing, setDemoing] = useState(false);
 
   const fields = useMemo(() => fieldMaps.filter((f) =>
     (f.upstream + f.field + f.downstream).toLowerCase().includes(q.toLowerCase())
@@ -111,22 +117,51 @@ export function LineageHubPage() {
     };
   }, [selected]);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('field'); setPhase('field'); setFieldFocus('dwd_fact_visit'); setFieldOk(true);
+    notify('① 字段级上下游：dwd_fact_visit 可查');
+    await new Promise((r) => setTimeout(r, 500));
+    setTab('impact'); setPhase('impact');
+    const high = impacts.find((i) => i.level === '高') || impacts[0];
+    setImpactOpen(high); setImpactOk(true);
+    notify(`② 影响范围评估：${high?.object || '高影响变更'} · ${high?.level || '高'} · 影响 ${high?.tables || 0} 表`);
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="LINEAGE · IMPACT · TRACE"
+        eyebrow="LINEAGE · IMPACT · TRACE · A5-01"
         title="依赖 / 血缘 / 数据追溯"
-        desc="模型依赖、字段级血缘、ODS→DWD→DWS→ADS 全链路追溯与影响分析。验收：字段级上下游可查，影响范围可评估。"
+        desc="验收：字段级上下游可查 → 影响范围可评估；覆盖 ODS→DWD→DWS→ADS 全链路。"
         actions={
           <>
-            <Btn icon="gauge" onClick={() => go('/center/indicators')}>指标列表</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="download" onClick={() => notify('血缘图谱已导出')}>导出图谱</Btn>
             <Btn variant="primary" icon="refresh" onClick={() => notify('血缘解析任务已提交')}>重新解析</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '字段上下游', d: '表/字段血缘可查', k: 'field' as const, on: fieldOk },
+          { n: '02', t: '影响评估', d: '变更范围可量化', k: 'impact' as const, on: impactOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${phase === s.k || s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 1 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {impactOk ? '影响已评估' : fieldOk ? '字段已定位' : 'ODS→ADS 全链路'}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="图谱节点" value="186" unit="个" delta="源/表/指标/应用" icon="network" tone="blue" onClick={() => setTab('table')} />
         <StatCard label="字段血缘" value={String(fieldMaps.length)} unit="条" delta="置信度 ≥ 90%" icon="braces" tone="violet" onClick={() => setTab('field')} />
         <StatCard label="高影响变更" value={String(impacts.filter((i) => i.level === '高').length)} unit="项" delta="待评估" icon="alert" tone="red" onClick={() => setTab('impact')} />

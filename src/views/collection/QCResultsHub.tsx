@@ -108,6 +108,8 @@ function buildHeatmap(org: string, dim: DimName) {
   );
 }
 
+type AcceptPhase = 'filter' | 'rank' | 'export';
+
 /** A5-06 ★ 质控结果统计：筛选联动 · 排名下钻 · 明细导出 */
 export function QCResultsHubPage() {
   const { go, notify } = useApp();
@@ -119,6 +121,11 @@ export function QCResultsHubPage() {
   const [active, setActive] = useState<ExceptionRow | null>(null);
   const [drillOrg, setDrillOrg] = useState<Institution | null>(null);
   const [heatCell, setHeatCell] = useState<{ dim: string; month: number; value: number } | null>(null);
+  const [phase, setPhase] = useState<AcceptPhase>('filter');
+  const [filtered, setFiltered] = useState(false);
+  const [ranked, setRanked] = useState(false);
+  const [exported, setExported] = useState(false);
+  const [demoing, setDemoing] = useState(false);
 
   const meta = rangeMeta[range];
 
@@ -203,32 +210,50 @@ export function QCResultsHubPage() {
     setRange('month');
     setQ('');
     setHeatCell(null);
+    setPhase('filter');
     notify('已清除全部筛选');
   };
 
   const exportDetail = () => {
+    setPhase('export'); setExported(true);
     notify(`已导出异常明细 ${exceptions.length} 条（CSV）· 筛选：${org || '全部机构'} / ${dim || '全部维度'} / ${meta.label}`);
   };
 
   const exportReport = () => {
+    setPhase('export'); setExported(true);
     notify(`质控报告已生成（PDF）· 通过率 ${passRate}% · 待处理 ${pendingCount}`);
   };
 
   const openOrgDrill = (inst: Institution) => {
     setDrillOrg(inst);
     setOrg(inst.name);
+    setPhase('rank'); setRanked(true); setFiltered(true);
     notify(`已下钻机构：${inst.name}，明细已联动筛选`);
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setPhase('filter'); setDim('完整性'); setRange('week'); setFiltered(true);
+    notify('① 筛选联动：完整性 · 近一周');
+    await new Promise((r) => setTimeout(r, 450));
+    const target = institutionsAll.find((i) => i.rank >= 35) || institutionsAll[institutionsAll.length - 1];
+    openOrgDrill(target);
+    notify('② 排名下钻：末位机构明细');
+    await new Promise((r) => setTimeout(r, 450));
+    exportDetail();
+    notify('③ 明细导出完成');
+    setDemoing(false);
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="QUALITY ANALYTICS · A5-06"
+        eyebrow="QUALITY ANALYTICS · A5-06 ★"
         title="质控结果统计"
-        desc="按机构 / 时间 / 维度 / 规则统计通过率、待处理异常、趋势、规则热力与机构排名。验收：筛选联动 · 排名下钻 · 明细导出。"
+        desc="验收：筛选联动 → 排名下钻 → 明细导出；按机构/时间/维度统计通过率、趋势与热力。"
         actions={
           <>
-            <Btn icon="workflow" onClick={() => go('/collection/qc-designer')}>★ 质控流程</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="download" onClick={exportReport}>导出报告</Btn>
             <Btn variant="primary" icon="download" onClick={exportDetail}>导出明细</Btn>
           </>
@@ -237,12 +262,12 @@ export function QCResultsHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '筛选联动', d: '机构 · 时间 · 维度' },
-          { n: '02', t: '排名下钻', d: '点击机构看明细' },
-          { n: '03', t: '明细导出', d: 'CSV / PDF 报告' },
+          { n: '01', t: '筛选联动', d: '机构 · 时间 · 维度', k: 'filter' as const, on: filtered || !!org || !!dim },
+          { n: '02', t: '排名下钻', d: '点击机构看明细', k: 'rank' as const, on: ranked },
+          { n: '03', t: '明细导出', d: 'CSV / PDF 报告', k: 'export' as const, on: exported },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className="qc-accept-step is-on">
+            <div className={`qc-accept-step ${phase === s.k || s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -250,7 +275,7 @@ export function QCResultsHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 统计口径 v2.1 · 42 家机构</span>
+        <span className="live-badge"><i /> {exported ? '导出完成' : ranked ? '已下钻' : filtered ? '筛选已联动' : '统计口径 v2.1'} · 42 家机构</span>
       </div>
 
       <div className="qc-filter mt-14">

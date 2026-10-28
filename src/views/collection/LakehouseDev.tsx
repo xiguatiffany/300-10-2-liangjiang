@@ -230,10 +230,13 @@ export function LakeLayersPage() {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<Theme | null>(null);
+  const [demoing, setDemoing] = useState(false);
+  const [bound, setBound] = useState(false);
+  const [seenLayers, setSeenLayers] = useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     const l = new URLSearchParams(window.location.search).get('layer');
-    if (l && layers.some((x) => x.key === l)) setLayer(l);
+    if (l && layers.some((x) => x.key === l)) { setLayer(l); setSeenLayers((s) => new Set(s).add(l)); }
   }, []);
 
   const rows = useMemo(() => themes.filter((t) =>
@@ -241,21 +244,46 @@ export function LakeLayersPage() {
     && (t.name + t.id + t.owner).toLowerCase().includes(q.toLowerCase())
   ), [layer, q]);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    for (const l of layers) {
+      setLayer(l.key); setSeenLayers((s) => new Set(s).add(l.key));
+      await new Promise((r) => setTimeout(r, 280));
+    }
+    setOpen(true); setBound(true);
+    notify('层级可扩展 · 主题可绑定资源 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="LAKE LAYERS & THEMES"
+        eyebrow="LAKE LAYERS & THEMES · A4-01"
         title="湖仓层级与主题"
-        desc="配置 DIM / 接入 / ODS / DWD / DWS / ADS 层级；主题支持新建、收藏、分析、应用、检索与监控。"
+        desc="验收：DIM/接入/ODS/DWD/DWS/ADS 层级可扩展，主题可绑定资源。"
         actions={
           <>
-            <Btn icon="dashboard" onClick={() => go('/collection/lake-dev')}>开发总览</Btn>
-            <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新建主题</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
+            <Btn variant="primary" icon="plus" onClick={() => { setOpen(true); setBound(true); }}>新建主题</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {layers.slice(0, 4).map((l, i) => (
+          <React.Fragment key={l.key}>
+            <div className={`qc-accept-step ${layer === l.key || seenLayers.has(l.key) ? 'is-on' : ''}`}>
+              <em>{String(i + 1).padStart(2, '0')}</em>
+              <strong>{l.key}</strong>
+              <small>{l.themes} 主题</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {bound ? '主题可绑定' : `已浏览 ${seenLayers.size}/${layers.length} 层`}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         {layers.map((l) => (
           <StatCard
             key={l.key}
@@ -344,28 +372,61 @@ export function LakeTablesPage() {
   const [q, setQ] = useState('');
   const [active, setActive] = useState<LakeTable | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [loop, setLoop] = useState({ create: false, apply: false, auth: false, trash: false });
 
   const rows = useMemo(() => lakeTables.filter((t) =>
     (!scope || t.scope === scope)
     && (t.name + t.owner + t.layer).toLowerCase().includes(q.toLowerCase())
   ), [scope, q]);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('tables'); setScope('私有表'); setLoop((l) => ({ ...l, create: true }));
+    setActive(lakeTables.find((t) => t.scope === '私有表') || lakeTables[0]);
+    notify('① 建表：私有表生命周期');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('apply'); setApplyOpen(true); setLoop((l) => ({ ...l, apply: true, auth: true }));
+    notify('②③ 资源申请 · 授权审核');
+    await new Promise((r) => setTimeout(r, 450));
+    setApplyOpen(false); setTab('trash'); setLoop((l) => ({ ...l, trash: true }));
+    notify('④ 回收站可恢复 · 闭环完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="LAKE TABLES & RESOURCE APPLY"
+        eyebrow="LAKE TABLES & RESOURCE APPLY · A4-02"
         title="湖仓表与资源申请"
-        desc="私有表全生命周期（结构/脚本建表、回收站、血缘、权限转移）；公共表申请与收藏；资源概览、申请与审核。"
+        desc="验收：建表 → 申请 → 授权 → 回收站闭环。"
         actions={
           <>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="layers" onClick={() => go('/collection/lake-layers')}>层级主题</Btn>
-            <Btn icon="sliders" onClick={() => go('/collection/tables')}>采集表配置</Btn>
-            <Btn variant="primary" icon="plus" onClick={() => setApplyOpen(true)}>资源申请</Btn>
+            <Btn variant="primary" icon="plus" onClick={() => { setApplyOpen(true); setLoop((l) => ({ ...l, apply: true })); }}>资源申请</Btn>
           </>
         }
       />
 
-      <Tabs variant="pill" value={tab} onChange={setTab} items={[
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '建表', d: '私有/公共', k: 'create' as const },
+          { n: '02', t: '申请', d: '资源单', k: 'apply' as const },
+          { n: '03', t: '授权', d: '审核通过', k: 'auth' as const },
+          { n: '04', t: '回收站', d: '可恢复', k: 'trash' as const },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${loop[s.k] ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {Object.values(loop).every(Boolean) ? '闭环完成' : '待演示闭环'}</span>
+      </div>
+
+      <Tabs className="mt-14" variant="pill" value={tab} onChange={setTab} items={[
         { key: 'tables', label: '湖仓表' },
         { key: 'apply', label: '资源申请' },
         { key: 'trash', label: '回收站' },
@@ -518,6 +579,10 @@ export function LakeFlowsPage() {
   const [runOpen, setRunOpen] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [runProgress, setRunProgress] = useState(0);
+  const [demoing, setDemoing] = useState(false);
+  const [arranged, setArranged] = useState(true);
+  const [ranOk, setRanOk] = useState(false);
+  const [lineageOk, setLineageOk] = useState(false);
   const abortRef = useRef(false);
   const logBoxRef = useRef<HTMLDivElement>(null);
 
@@ -561,8 +626,9 @@ export function LakeFlowsPage() {
     notify('试跑已终止');
   };
 
-  const startRun = async () => {
+  const startRun = async (flow?: Flow) => {
     if (running) return;
+    const target = flow || active;
     abortRef.current = false;
     setRunning(true);
     setRunOpen(true);
@@ -570,13 +636,13 @@ export function LakeFlowsPage() {
     setSelectedId(null);
     setLogs([]);
     setRunProgress(0);
-    resetGraph(active);
-    notify(`${active.name} 试跑已启动`);
+    resetGraph(target);
+    notify(`${target.name} 试跑已启动`);
 
-    const order = topoSort(active.graph.map((n) => n.id), active.edges);
-    const base = Object.fromEntries(active.graph.map((n) => [n.id, n]));
-    pushLog('INFO', `======= 试跑启动 ${active.id} ${active.name} =======`);
-    pushLog('INFO', `调度策略 ${active.cron} · 类型 ${active.kind} · 节点 ${order.length}`);
+    const order = topoSort(target.graph.map((n) => n.id), target.edges);
+    const base = Object.fromEntries(target.graph.map((n) => [n.id, n]));
+    pushLog('INFO', `======= 试跑启动 ${target.id} ${target.name} =======`);
+    pushLog('INFO', `调度策略 ${target.cron} · 类型 ${target.kind} · 节点 ${order.length}`);
     pushLog('DEBUG', `拓扑顺序 ${order.join(' → ')}`);
     await sleep(350);
     if (abortRef.current) { setRunning(false); return; }
@@ -586,8 +652,8 @@ export function LakeFlowsPage() {
       if (abortRef.current) break;
       const id = order[i];
       const src = base[id];
-      const inbound = active.edges.filter(([, t]) => t === id);
-      const outbound = active.edges.filter(([s]) => s === id);
+      const inbound = target.edges.filter(([, t]) => t === id);
+      const outbound = target.edges.filter(([s]) => s === id);
 
       setEdgeStates((prev) => {
         const next = { ...prev };
@@ -648,33 +714,65 @@ export function LakeFlowsPage() {
         return next;
       });
       setRunProgress(100);
+      setRanOk(true);
       if (runFailed) {
-        pushLog('ERROR', `======= 试跑结束（失败） ${active.name} =======`);
+        pushLog('ERROR', `======= 试跑结束（失败） ${target.name} =======`);
         notify('试跑结束：存在失败节点');
       } else {
-        pushLog('SUCCESS', `======= 试跑结束（成功） ${active.name} =======`);
+        pushLog('SUCCESS', `======= 试跑结束（成功） ${target.name} =======`);
         notify('试跑完成');
       }
     }
     setRunning(false);
   };
 
+  const demoAccept = async () => {
+    if (running || demoing) return;
+    setDemoing(true);
+    setArranged(true);
+    const offline = flows.find((f) => f.kind === '离线DAG') || flows[0];
+    selectFlow(offline);
+    notify('① 拖拽编排：已选离线 DAG');
+    await new Promise((r) => setTimeout(r, 400));
+    await startRun(offline);
+    notify('② 运行完成 · 节点状态可追溯');
+    setLineageOk(true);
+    notify('③ 血缘可打开对照 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="OFFLINE DAG / REALTIME FLOW"
+        eyebrow="OFFLINE DAG / REALTIME FLOW · A4-03"
         title="离线 / 实时流程编排"
-        desc="可视化配置离线 DAG；支持 Flink / Spark 实时任务；检索、导出、上下线、终止、血缘与运行历史。"
+        desc="验收：拖拽编排 → 运行试跑 → 血缘可追溯；支持 Flink/Spark 实时任务与上下线。"
         actions={
           <>
-            <Btn icon="clipboard" onClick={() => go('/collection/tasks')}>任务管理</Btn>
-            <Btn icon="code" onClick={() => go('/bid/data-query')}>数据查询</Btn>
-            <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新建流程</Btn>
+            <Btn icon="zap" loading={demoing || running} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="network" onClick={() => { setLineageOk(true); go('/collection/lineage'); }}>血缘</Btn>
+            <Btn variant="primary" icon="play" loading={running} onClick={() => startRun()}>试跑</Btn>
           </>
         }
       />
 
-      <div className="flow-guide">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '拖拽编排', d: '离线 DAG / 实时', on: arranged },
+          { n: '02', t: '运行试跑', d: '节点·日志', on: ranOk },
+          { n: '03', t: '血缘追溯', d: '上下游可查', on: lineageOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {lineageOk ? '血缘可追溯' : ranOk ? '试跑完成' : running ? '试跑中' : '待验收'}</span>
+      </div>
+
+      <div className="flow-guide mt-14">
         <span><b>1</b> 选流程</span><i>→</i>
         <span><b>2</b> 点节点看详情</span><i>→</i>
         <span><b>3</b> 试跑看日志</span><i>→</i>
@@ -727,7 +825,7 @@ export function LakeFlowsPage() {
               <p>{active.desc} · 点击节点打开详情抽屉</p>
             </div>
             <div className="dag-canvas-actions">
-              <Btn size="sm" variant="primary" icon="play" loading={running} onClick={startRun}>{running ? '试跑中' : '试跑'}</Btn>
+              <Btn size="sm" variant="primary" icon="play" loading={running} onClick={() => startRun()}>{running ? '试跑中' : '试跑'}</Btn>
               <Btn size="sm" icon="circlealert" disabled={!running && !runOpen} onClick={stopRun}>终止</Btn>
               <Btn size="sm" icon="terminal" onClick={() => setRunOpen(true)} disabled={!logs.length}>运行日志</Btn>
               <Btn size="sm" icon="download" onClick={() => notify('流程已导出 JSON')}>导出</Btn>

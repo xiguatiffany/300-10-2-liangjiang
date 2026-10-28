@@ -68,25 +68,56 @@ const toneOf = (s: string) => {
 /** 标准字典值域贯通总览 */
 export function DictBridgeHubPage() {
   const { go, notify } = useApp();
+  const [demoing, setDemoing] = useState(false);
+  const [syncedOk, setSyncedOk] = useState(false);
+  const [aligned, setAligned] = useState(false);
   const synced = bridges.filter((b) => b.sync === '已贯通').length;
   const conflict = bridges.filter((b) => b.sync === '冲突').length;
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    notify('① 触发标准→湖仓双向同步');
+    await new Promise((r) => setTimeout(r, 500));
+    setSyncedOk(true);
+    notify('② 属性/组合/依赖对齐完成');
+    setAligned(true);
+    await new Promise((r) => setTimeout(r, 400));
+    notify('③ 治理侧与开发侧口径一致 · 验收通过');
+    setDemoing(false);
+  };
 
   return (
     <>
       <PageHeader
-        eyebrow="STANDARD DICT & DOMAIN BRIDGE"
+        eyebrow="STANDARD DICT & DOMAIN BRIDGE · A3-01"
         title="标准字典值域贯通"
-        desc="打通湖仓元数据与数据中台标准字典、值域，统一属性定义、组合关系与依赖引用，保证治理侧与开发侧同一口径。"
+        desc="验收：同一字典在治理与开发侧属性、组合、依赖口径一致，版本可追溯。"
         actions={
           <>
-            <Btn icon="book" onClick={() => go('/center/standards')}>中台数据元</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="braces" onClick={() => go('/collection/domain-bridge')}>值域贯通</Btn>
-            <Btn variant="primary" icon="refresh" onClick={() => notify('已触发标准→湖仓双向同步任务')}>立即同步</Btn>
+            <Btn variant="primary" icon="refresh" onClick={() => { setSyncedOk(true); notify('已触发标准→湖仓双向同步任务'); }}>立即同步</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '标准同步', d: '中台→湖仓', on: syncedOk },
+          { n: '02', t: '属性对齐', d: '组合·依赖', on: aligned },
+          { n: '03', t: '口径一致', d: '双侧可校验', on: syncedOk && aligned },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> 已贯通 {synced} · 冲突 {conflict}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="贯通字段" value={String(synced)} unit={`/ ${bridges.length}`} delta="双侧口径一致" icon="checkcircle" tone="green" onClick={() => go('/collection/domain-bridge')} />
         <StatCard label="中台值域" value={String(valueDomains.length)} unit="套样例" delta="生产 186 套" icon="braces" tone="violet" onClick={() => go('/center/domains')} />
         <StatCard label="数据元" value={String(standardElements.length)} unit="个样例" delta="已发布为主" icon="book" tone="blue" onClick={() => go('/center/standards')} />

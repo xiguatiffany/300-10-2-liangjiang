@@ -5,6 +5,9 @@ import { useApp } from '../app-context';
 import { roles, permissionApps, rolePermissions, users, auditLogs } from '../data';
 import { CollectionUsersPage, AuditPage } from './CollectionPages';
 
+export { BizFoundationHubPage } from './admin/BizFoundationHub';
+export { PortalComposerHubPage } from './admin/PortalComposerHub';
+
 export function AdminUsersPage() {
   return <CollectionUsersPage />;
 }

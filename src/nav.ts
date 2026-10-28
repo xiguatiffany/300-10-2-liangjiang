@@ -41,20 +41,27 @@ export const navConfig: Record<ModuleKey, NavGroup[]> = {
       { key: 'governance-service', label: '数据治理服务', icon: 'building', badge: '新', badgeTone: 'green' },
       { key: 'resource-manage', label: '数据资源管理', icon: 'layers', badge: '新', badgeTone: 'green' },
       { key: 'data-app', label: '数据应用服务', icon: 'code', badge: '新', badgeTone: 'green' },
-      { key: 'data-security', label: '数据安全服务', icon: 'shield', badge: '新', badgeTone: 'green' },
+      { key: 'data-security', label: '数据安全中心', icon: 'shield', badge: '新', badgeTone: 'green' },
       { key: 'standard-docs', label: '标准文档管理', icon: 'file', badge: '▲', badgeTone: 'amber' },
       { key: 'rules', label: '五维规则配置', icon: 'listfilter', badge: '▲', badgeTone: 'amber' },
       { key: 'score-model', label: '质量评分模型', icon: 'chart', badge: '▲', badgeTone: 'amber' },
       { key: 'main-archive', label: '居民主档案', icon: 'fingerprint', badge: '▲', badgeTone: 'amber' },
       { key: 'master-data', label: '主数据管理', icon: 'boxes', badge: '新', badgeTone: 'green' },
+      { key: 'resource-center', label: '数据资源中心', icon: 'database', badge: '新', badgeTone: 'green' },
     ]},
     { title: '指标与标签', items: [
-      { key: 'indicator-market', label: '指标市场', icon: 'store', badge: '▲', badgeTone: 'amber' },
-      { key: 'tag-board', label: '标签看板', icon: 'tags', badge: '▲', badgeTone: 'amber' },
+      { key: 'indicator-market', label: '指标管理', icon: 'store', badge: '▲', badgeTone: 'amber' },
+      { key: 'tag-board', label: '标签管理', icon: 'tags', badge: '▲', badgeTone: 'amber' },
+      { key: 'self-bi', label: '自服务 BI', icon: 'chart', badge: '新', badgeTone: 'green' },
+      { key: 'open-portal', label: '数据发布与开放', icon: 'store', badge: '新', badgeTone: 'green' },
     ]},
     { title: '资产运营', items: [
       { key: 'asset-management', label: '数据资产管理', icon: 'layers', badge: '★', badgeTone: 'red' },
       { key: 'asset-publish', label: '资产发布/停用', icon: 'uploadcloud', badge: '★', badgeTone: 'red' },
+    ]},
+    { title: '业务中台', items: [
+      { key: 'biz-foundation', label: '基础支撑', icon: 'building', badge: '新', badgeTone: 'green' },
+      { key: 'portal-composer', label: '门户编排', icon: 'dashboard', badge: '新', badgeTone: 'green' },
     ]},
   ],
   center: [
@@ -85,17 +92,24 @@ export const navConfig: Record<ModuleKey, NavGroup[]> = {
       { key: 'dev', label: '数据开发', icon: 'workflow' },
     ]},
     { title: '数据资源中心', items: [
+      { key: 'resource-center', label: '资源中心总览', icon: 'database', badge: '新', badgeTone: 'green' },
       { key: 'report', label: '上报任务', icon: 'uploadcloud' },
     ]},
     { title: '指标管理', items: [
+      { key: 'indicator-market', label: '指标管理 ▲', icon: 'store', badge: '▲', badgeTone: 'amber' },
       { key: 'indicators', label: '指标列表', icon: 'gauge' },
       { key: 'subscriptions', label: '订阅列表', icon: 'mail' },
-      { key: 'tags', label: '标签管理', icon: 'tags' },
+      { key: 'tags', label: '标签列表', icon: 'tags' },
+      { key: 'tag-board', label: '标签管理 ▲', icon: 'tags', badge: '▲', badgeTone: 'amber' },
       { key: 'graph', label: '依赖/血缘/追溯', icon: 'network', badge: '新', badgeTone: 'green' },
       { key: 'models', label: '模型管理', icon: 'boxes' },
     ]},
-    { title: '资产运营', items: [
-      { key: 'marketplace', label: '数据服务管理', icon: 'store', badge: '新', badgeTone: 'green' },
+    { title: '自服务 BI', items: [
+      { key: 'self-bi', label: '自服务 BI', icon: 'chart', badge: '新', badgeTone: 'green' },
+    ]},
+    { title: '数据发布与开放', items: [
+      { key: 'marketplace', label: '开放门户', icon: 'store', badge: '新', badgeTone: 'green' },
+      { key: 'open-portal', label: '数据发布与开放', icon: 'store', badge: '新', badgeTone: 'green' },
     ]},
   ],
   collection: [
@@ -158,7 +172,7 @@ export const navConfig: Record<ModuleKey, NavGroup[]> = {
       { key: 'governance-service', label: '数据治理服务', icon: 'building', badge: '新', badgeTone: 'green' },
       { key: 'resource-manage', label: '数据资源管理', icon: 'layers', badge: '新', badgeTone: 'green' },
       { key: 'data-app', label: '数据应用服务', icon: 'code', badge: '新', badgeTone: 'green' },
-      { key: 'data-security', label: '数据安全服务', icon: 'shield', badge: '新', badgeTone: 'green' },
+      { key: 'data-security', label: '数据安全中心', icon: 'shield', badge: '新', badgeTone: 'green' },
       { key: 'standard-docs', label: '标准文档管理', icon: 'file', badge: '▲', badgeTone: 'amber' },
     ]},
     { title: '平台管理', items: [
@@ -169,12 +183,16 @@ export const navConfig: Record<ModuleKey, NavGroup[]> = {
     ]},
   ],
   admin: [
+    { title: '基础支撑', items: [
+      { key: 'foundation', label: '基础支撑', icon: 'building', badge: '新', badgeTone: 'green' },
+    ]},
     { title: '统一身份认证', items: [
       { key: 'users', label: '用户管理', icon: 'users' },
       { key: 'roles', label: '角色管理', icon: 'usercog' },
       { key: 'permissions', label: '权限配置', icon: 'key' },
     ]},
     { title: '门户与应用', items: [
+      { key: 'portal-composer', label: '门户编排', icon: 'dashboard', badge: '新', badgeTone: 'green' },
       { key: 'apps', label: '应用管理', icon: 'boxes' },
       { key: 'data-permissions', label: '数据权限', icon: 'shield' },
     ]},

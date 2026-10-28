@@ -410,3 +410,67 @@
 .rule-trial span { font-size: 8px; color: var(--muted-2); }
 .rule-trial strong { font-size: 13px; color: var(--on-surface); }
 
+
+/* B9 自服务 BI */
+.bi-query { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 14px; align-items: start; }
+.bi-theme-list { display: flex; flex-direction: column; padding: 8px; gap: 4px; }
+.bi-theme-list button {
+  text-align: left; border: 1px solid transparent; background: transparent;
+  border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px;
+}
+.bi-theme-list button:hover { background: #f5f8fd; }
+.bi-theme-list button.is-on { background: #f3f0ff; border-color: #ddd6fe; }
+.bi-theme-list strong { font-size: 11px; color: #1e2d4a; }
+.bi-theme-list small { font-size: 8.5px; color: #8b98b0; }
+.bi-pivot { overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.bi-pivot table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.bi-pivot th, .bi-pivot td { padding: 8px 10px; border-bottom: 1px solid #eef2f8; text-align: left; white-space: nowrap; }
+.bi-pivot th { background: #f7f9fc; color: #5b6c88; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+.bi-pivot.is-freeze td:first-child, .bi-pivot.is-freeze th:first-child {
+  position: sticky; left: 0; background: #fff; z-index: 2; box-shadow: 1px 0 0 #eef2f8;
+}
+.bi-pivot.is-freeze th:first-child { background: #f7f9fc; z-index: 3; }
+.bi-chart-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+}
+.bi-chart-grid button {
+  border: 1px solid #e6edf9; background: var(--surface-container-lowest); border-radius: 10px;
+  padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #5b6c88;
+}
+.bi-chart-grid button:hover { border-color: #bcd2f7; }
+.bi-chart-grid button.is-on { border-color: #a78bfa; background: #f5f3ff; color: #6d28d9; }
+.bi-chart-grid strong { font-size: 10px; color: inherit; }
+.bi-chart-grid small { font-size: 8px; color: #8b98b0; }
+.bi-kpi-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px 0; }
+.bi-kpi-preview > div { background: #f7f9fc; border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; }
+.bi-kpi-preview span { font-size: 9px; color: #8b98b0; }
+.bi-kpi-preview strong { font-size: 20px; color: #1e2d4a; letter-spacing: -.02em; }
+.bi-kpi-preview em { font-style: normal; font-size: 10px; color: #059669; }
+.bi-fav-list { display: flex; flex-direction: column; gap: 8px; }
+.bi-fav-list > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eef2f8; }
+.bi-fav-list > div:last-child { border-bottom: 0; }
+.bi-fav-list strong { display: block; font-size: 11px; color: #1e2d4a; }
+.bi-fav-list small { font-size: 8.5px; color: #8b98b0; }
+.bi-fav-list button {
+  border: 1px solid #e6edf9; background: #fff; border-radius: 6px; padding: 4px 8px;
+  font-size: 9px; color: #5b6c88; display: inline-flex; align-items: center; gap: 4px;
+}
+.bi-fav-list button.is-on { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+@media (max-width: 1000px) {
+  .bi-query { grid-template-columns: 1fr; }
+  .bi-chart-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bi-kpi-preview { grid-template-columns: 1fr; }
+}
+
+/* B11 开放门户 */
+.bi-api-out {
+  margin: 0; padding: 12px 14px; border-radius: 10px; background: #0f172a; color: #a5f3fc;
+  font-size: 10px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+  min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* A3-05 preview enhance */
+.preview-crumb { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; color: #8b98b0; }
+.preview-crumb .link-btn { font-size: 10px; }
+.is-masked-col { background: #fffbeb; }
+.is-active-row td { background: #f3f0ff; }

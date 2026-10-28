@@ -68,6 +68,8 @@ const healthColor = (s: TaskStatus) => {
   return 'red';
 };
 
+type AcceptPhase = 'filter' | 'metrics' | 'schema' | 'export';
+
 export function CdcSyncMonitorPage() {
   const { go, notify } = useApp();
   const [tab, setTab] = useState('tasks');
@@ -78,6 +80,12 @@ export function CdcSyncMonitorPage() {
   const [range, setRange] = useState('7d');
   const [active, setActive] = useState<SyncTask | null>(null);
   const [change, setChange] = useState<SchemaChange | null>(null);
+  const [phase, setPhase] = useState<AcceptPhase>('filter');
+  const [filteredOk, setFilteredOk] = useState(false);
+  const [metricsOk, setMetricsOk] = useState(false);
+  const [schemaOk, setSchemaOk] = useState(false);
+  const [exported, setExported] = useState(false);
+  const [demoing, setDemoing] = useState(false);
 
   const filtered = useMemo(() => tasks.filter((t) =>
     (!status || t.status === status)
@@ -107,22 +115,65 @@ export function CdcSyncMonitorPage() {
     { label: '两江疾控', value: 6 }, { label: '两江妇幼', value: 9 },
   ];
 
+  const exportReport = () => {
+    setPhase('export'); setExported(true);
+    notify('CDC 监控统计报表已导出（含机构/数据源维度）');
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setOrg('两江医院'); setStatus('运行中'); setPhase('filter'); setFilteredOk(true);
+    notify('① 多维检索：机构 + 运行状态');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('tasks'); setPhase('metrics'); setMetricsOk(true);
+    const hit = tasks.find((t) => t.org === '两江医院') || tasks[0];
+    setActive(hit);
+    notify('② 采集/入湖量与成功率指标就绪');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('schema'); setPhase('schema'); setSchemaOk(true);
+    setChange(schemaHistory[0] || null);
+    notify('③ 结构变更历史可追溯');
+    await new Promise((r) => setTimeout(r, 350));
+    exportReport();
+    notify('④ 报表已导出 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="CDC SYNC MONITOR"
+        eyebrow="CDC SYNC MONITOR · A2-11"
         title="CDC 同步监控"
-        desc="多条件检索同步任务，全过程监控采集量、入湖量、成功率与结构变更；支持统计分析与报表导出。"
+        desc="验收：多维检索 → 运行指标完整 → 结构变更可追溯 → 报表可导出。"
         actions={
           <>
-            <Btn icon="cable" onClick={() => go('/collection/channels')}>同步管理</Btn>
-            <Btn icon="download" onClick={() => notify('CDC 监控统计报表已导出（含机构/数据源维度）')}>导出报表</Btn>
-            <Btn variant="primary" icon="refresh" onClick={() => notify('监控指标已刷新 · 14:22:18')}>刷新</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="download" onClick={exportReport}>导出报表</Btn>
+            <Btn variant="primary" icon="refresh" onClick={() => { setMetricsOk(true); setPhase('metrics'); notify('监控指标已刷新 · 14:22:18'); }}>刷新</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '多维检索', d: '机构·状态·数据源', k: 'filter' as const, on: filteredOk || !!org || !!status || !!source || !!q },
+          { n: '02', t: '运行指标', d: '采集·入湖·成功率', k: 'metrics' as const, on: metricsOk },
+          { n: '03', t: '结构变更', d: '历史可追溯', k: 'schema' as const, on: schemaOk },
+          { n: '04', t: '报表导出', d: '统计可下载', k: 'export' as const, on: exported },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${phase === s.k || s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {exported ? '报表已导出' : schemaOk ? '变更可追溯' : metricsOk ? '指标就绪' : '待验收'}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="原始采集量" value={totals.raw.toLocaleString()} unit="行" delta={`${filtered.length} 个任务`} icon="database" tone="blue" />
         <StatCard label="成功入湖量" value={totals.lake.toLocaleString()} unit="行" delta={`成功率 ${totals.rate}%`} icon="layers" tone="green" />
         <StatCard label="结构变更" value={String(totals.schema)} unit="次" delta="可追溯影响" icon="listfilter" tone="amber" onClick={() => setTab('schema')} />

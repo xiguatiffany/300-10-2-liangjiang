@@ -1,41 +1,124 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
-import { AreaChart, BarList, Donut, RadialScore } from '../../components/charts';
-import { Badge, Btn, Card, PageHeader, Tabs } from '../../components/ui';
+import { AreaChart, Donut, RadialScore } from '../../components/charts';
+import { Badge, Btn, Card, Field, Modal, PageHeader, Tabs } from '../../components/ui';
 import { useApp } from '../../app-context';
-import { bidStats, portalApps, portalNews, portalTodos, portalFavorites, portalTrend, qcInstitutions } from '../../dataBid';
-import { indicators } from '../../data';
+import { portalApps, portalNews, portalTodos, portalFavorites, portalTrend, qcInstitutions } from '../../dataBid';
+
+type RoleKey = 'leader' | 'admin' | 'clinical';
+type WidgetKey = 'hero' | 'stats' | 'trend' | 'apps' | 'news' | 'fav';
+
+const roleMeta: Record<RoleKey, { label: string; blurb: string; hero: string; apps: string[] }> = {
+  leader: {
+    label: '领导驾驶舱',
+    blurb: '决策视角 · 全区健康与治理态势',
+    hero: '数据驱动健康\n治理创造价值',
+    apps: ['indicator', 'bi', 'qc', 'share', 'mpi', 'tag'],
+  },
+  admin: {
+    label: '数据管理员',
+    blurb: '治理视角 · 采集质量资产与服务',
+    hero: '管好每一份数据\n服务每一次决策',
+    apps: ['collect', 'govern', 'qc', 'indicator', 'share', 'bi'],
+  },
+  clinical: {
+    label: '临床业务',
+    blurb: '业务视角 · 主索引标签与质控闭环',
+    hero: '让临床看见数据\n让数据服务患者',
+    apps: ['mpi', 'tag', 'qc', 'indicator', 'govern', 'share'],
+  },
+};
+
+const defaultWidgets: Record<WidgetKey, boolean> = {
+  hero: true, stats: true, trend: true, apps: true, news: true, fav: true,
+};
 
 export function BidHome() {
   const { go, notify } = useApp();
-  const [role, setRole] = useState('leader');
+  const [role, setRole] = useState<RoleKey>('leader');
+  const [custom, setCustom] = useState(false);
+  const [widgets, setWidgets] = useState(defaultWidgets);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const meta = roleMeta[role];
+
+  const apps = useMemo(() => {
+    const map = Object.fromEntries(portalApps.map((a) => [a.key, a]));
+    return meta.apps.map((k) => map[k]).filter(Boolean);
+  }, [meta.apps]);
+
+  const todos = useMemo(() => {
+    if (role === 'clinical') return portalTodos.filter((t) => t.from.includes('质量') || t.from.includes('医务') || t.level === '高').slice(0, 4);
+    if (role === 'admin') return portalTodos;
+    return portalTodos.filter((t) => t.level !== '低').slice(0, 4);
+  }, [role]);
+
+  const toggleWidget = (k: WidgetKey) => setWidgets((w) => ({ ...w, [k]: !w[k] }));
+
+  const doSearch = () => {
+    const hit = [...portalApps.map((a) => a.name), ...portalFavorites.map((f) => f.name)].find((n) => n.includes(q.trim()));
+    notify(hit ? `已定位：${hit}` : (q.trim() ? `未命中「${q}」，可切换至指标市场继续检索` : '请输入关键词'));
+    if (hit?.includes('指标') || portalFavorites.some((f) => f.name === hit)) go('/bid/indicator-market');
+    else if (hit) {
+      const app = portalApps.find((a) => a.name === hit);
+      if (app) go(app.path);
+    }
+    setSearchOpen(false);
+  };
+
   return (
-    <div className="bid-home">
+    <div className={`bid-home ${custom ? 'is-custom' : ''}`}>
       <div className="portal-top">
         <div>
-          <span className="portal-eyebrow">LIANGJIANG DIGITAL HEALTH · 2026</span>
+          <span className="portal-eyebrow">LIANGJIANG DIGITAL HEALTH · C2 ▲</span>
           <h1>两江新区数智健康管理服务平台</h1>
-          <p>一屏统览全区健康数据，让数据治理成果服务临床、公卫、监管与决策。</p>
+          <p>{meta.blurb} · 角色化首页 · 组件可配置 · PC/移动/大屏模板就绪</p>
         </div>
         <div className="portal-top-actions">
-          <div className="portal-search" onClick={() => notify('全局搜索：输入指标、机构、数据表或应用', 'info')}>
+          <div className="portal-search" onClick={() => setSearchOpen(true)}>
             <Icon name="search" size={15} /><span>搜索指标、机构、数据资源…</span><kbd>⌘ K</kbd>
           </div>
-          <Tabs variant="pill" value={role} onChange={setRole} items={[{ key: 'leader', label: '领导驾驶舱' }, { key: 'admin', label: '数据管理员' }]} />
-          <Btn size="sm" icon="settings" onClick={() => notify('已进入首页自定义模式', 'info')}>自定义看板</Btn>
+          <Tabs variant="pill" value={role} onChange={(k) => setRole(k as RoleKey)} items={[
+            { key: 'leader', label: '领导驾驶舱' },
+            { key: 'admin', label: '数据管理员' },
+            { key: 'clinical', label: '临床业务' },
+          ]} />
+          <Btn size="sm" icon="dashboard" variant={custom ? 'primary' : 'secondary'} onClick={() => { setCustom((v) => !v); notify(custom ? '已退出自定义模式' : '已进入首页自定义模式 · 勾选组件'); }}>
+            {custom ? '完成配置' : '自定义看板'}
+          </Btn>
+          <Btn size="sm" icon="boxes" onClick={() => go('/admin/portal-composer')}>门户编排</Btn>
+          <div className="portal-account">
+            <button type="button" onClick={() => setPwdOpen(true)}><Icon name="key" size={13} /> 改密</button>
+            <button type="button" onClick={() => notify('已安全退出登录')}><Icon name="logout" size={13} /> 退出</button>
+          </div>
         </div>
       </div>
 
+      {custom && (
+        <div className="portal-widget-bar">
+          <span>显示组件</span>
+          {([
+            ['hero', '驾驶舱'], ['stats', '统计卡'], ['trend', '趋势/质量'],
+            ['apps', '我的应用'], ['news', '资讯待办'], ['fav', '关注/排名/最近'],
+          ] as [WidgetKey, string][]).map(([k, l]) => (
+            <button key={k} type="button" className={widgets[k] ? 'is-on' : ''} onClick={() => toggleWidget(k)}>{l}</button>
+          ))}
+          <em>切换角色可预览差异化布局 · 保存后按角色模板生效</em>
+        </div>
+      )}
+
+      {widgets.hero && (
       <section className="portal-hero">
         <div className="portal-hero-grid" />
         <div className="portal-hero-left">
-          <span className="portal-hero-tag"><i /> 应标演示版 · 17 项 ★/▲ 已就绪</span>
-          <h2>数据驱动健康<br />治理创造价值</h2>
+          <span className="portal-hero-tag"><i /> {meta.label} · C2-01 ▲ 角色化首页</span>
+          <h2>{meta.hero.split('\n').map((line, i) => <React.Fragment key={i}>{line}{i === 0 ? <br /> : null}</React.Fragment>)}</h2>
           <p>覆盖 42 家医疗机构、12,846 张数据表、2,572 项指标，构建“采集—治理—指标—标签—服务”的区域健康数据底座。</p>
           <div className="portal-hero-actions">
             <button className="hero-btn primary" onClick={() => go('/bid/collection-wizard')}><Icon name="play" size={14} /> 开始演示</button>
             <button className="hero-btn" onClick={() => go('/bid/demo')}><Icon name="list" size={14} /> 查看演示清单</button>
-            <button className="hero-btn ghost" onClick={() => go('/bid/monitor')}><Icon name="activity" size={14} /> 实时监控</button>
+            <button className="hero-btn ghost" onClick={() => go(role === 'clinical' ? '/bid/main-archive' : role === 'admin' ? '/bid/monitor' : '/bid/self-bi')}><Icon name="activity" size={14} /> {role === 'clinical' ? '主索引' : role === 'admin' ? '实时监控' : '自服务 BI'}</button>
           </div>
           <div className="portal-hero-stats">
             <div><span>接入机构</span><strong>42<small>家</small></strong></div>
@@ -60,9 +143,11 @@ export function BidHome() {
             <div className="plc-row"><span>LIS 报告</span><strong>+ 486</strong><em>条/分钟</em></div>
           </div>
         </div>
-        <div className="portal-corner"><span><i className="live-dot" /> 数据服务运行正常</span><span>重庆 · 两江新区</span></div>
+        <div className="portal-corner"><span><i className="live-dot" /> 数据服务运行正常</span><span>重庆 · 两江新区 · {meta.label}</span></div>
       </section>
+      )}
 
+      {widgets.stats && (
       <div className="stat-grid mt-14">
         {[
           { label: '接入医疗机构', value: '42', unit: '家', delta: '二级以上 26 家', icon: 'building', tone: 'blue' },
@@ -77,7 +162,9 @@ export function BidHome() {
           </div>
         ))}
       </div>
+      )}
 
+      {widgets.trend && (
       <div className="portal-grid mt-14">
         <Card title="数据接入与治理趋势" subtitle="近 8 个月入湖数据表数量" actions={<span className="live-badge"><i /> 实时</span>}>
           <div className="chart-headline"><div><strong>12,846</strong><span>张数据表</span><em><Icon name="arrowupright" size={11} /> 88.3%</em></div><div className="chart-headline-sub"><span className="dot-color" style={{ background: '#6755F5' }} />数据表 · 近 8 个月</div></div>
@@ -90,11 +177,14 @@ export function BidHome() {
           ]} />
         </Card>
       </div>
+      )}
 
+      {(widgets.apps || widgets.news) && (
       <div className="portal-grid-2 mt-14">
-        <Card title="我的应用" subtitle="按角色推荐的高频应用" actions={<button className="link-btn" onClick={() => notify('已进入应用管理', 'info')}>全部应用 <Icon name="arrowright" size={11} /></button>}>
+        {widgets.apps && (
+        <Card title="我的应用" subtitle={`按「${meta.label}」推荐`} actions={<button className="link-btn" onClick={() => go('/admin/apps')}>全部应用 <Icon name="arrowright" size={11} /></button>}>
           <div className="app-tile-grid">
-            {portalApps.map((a) => (
+            {apps.map((a) => (
               <button key={a.key} className={`app-tile tone-${a.tone}`} onClick={() => go(a.path)}>
                 <span className="app-tile-icon"><Icon name={a.icon} size={19} /></span>
                 <strong>{a.name}</strong>
@@ -104,6 +194,8 @@ export function BidHome() {
             ))}
           </div>
         </Card>
+        )}
+        {widgets.news && (
         <div className="portal-side-stack">
           <Card title="政策资讯" subtitle="国家 / 市级 / 区级" actions={<button className="link-btn" onClick={() => notify('政策资讯栏目已打开', 'info')}>更多</button>}>
             <div className="news-list">
@@ -116,9 +208,9 @@ export function BidHome() {
               ))}
             </div>
           </Card>
-          <Card title="待办事项" subtitle="5 项待处理" actions={<span className="todo-count">5</span>}>
+          <Card title="待办事项" subtitle={`${todos.length} 项待处理`} actions={<span className="todo-count">{todos.length}</span>}>
             <div className="todo-list">
-              {portalTodos.map((t) => (
+              {todos.map((t) => (
                 <button key={t.title} onClick={() => notify(`已打开待办：${t.title}`, 'info')}>
                   <span className={`todo-dot ${t.level === '高' ? 'red' : t.level === '中' ? 'amber' : 'slate'}`} />
                   <div><strong>{t.title}</strong><small>{t.from} · {t.due}</small></div>
@@ -128,8 +220,11 @@ export function BidHome() {
             </div>
           </Card>
         </div>
+        )}
       </div>
+      )}
 
+      {widgets.fav && (
       <div className="portal-grid-3 mt-14">
         <Card title="我的关注" subtitle="指标与资源">
           <div className="favorite-list">
@@ -155,13 +250,33 @@ export function BidHome() {
               { label: '质控可视化流程', icon: 'workflow', path: '/collection/qc-designer' },
               { label: '指标市场', icon: 'store', path: '/bid/indicator-market' },
               { label: '居民主档案', icon: 'fingerprint', path: '/bid/main-archive' },
-              { label: '资产发布', icon: 'uploadcloud', path: '/bid/asset-publish' },
+              { label: '门户编排', icon: 'boxes', path: '/admin/portal-composer' },
             ].map((r) => <button key={r.label} onClick={() => go(r.path)}><span><Icon name={r.icon} size={14} /></span>{r.label}<Icon name="arrowright" size={12} /></button>)}
           </div>
           <div className="divider-h" />
           <button className="portal-help" onClick={() => notify('演示指引已打开', 'info')}><Icon name="help" size={14} /><div><strong>演示遇到问题？</strong><small>查看 17 项演示脚本与常见问题</small></div><Icon name="arrowright" size={12} /></button>
         </Card>
       </div>
+      )}
+
+      <Modal open={searchOpen} onClose={() => setSearchOpen(false)} title="快速搜索" desc="检索指标、机构、数据表或应用入口" width={520}
+        footer={<><Btn onClick={() => setSearchOpen(false)}>取消</Btn><Btn variant="primary" icon="search" onClick={doSearch}>搜索</Btn></>}>
+        <Field label="关键词" required><input className="input" autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="例如：门诊预约、质控中心、居民主索引" /></Field>
+        <div className="tag-row mt-14">
+          {['门诊预约', '质控中心', '居民主索引', '指标市场'].map((h) => (
+            <button key={h} type="button" className="link-btn" onClick={() => setQ(h)}>{h}</button>
+          ))}
+        </div>
+      </Modal>
+
+      <Modal open={pwdOpen} onClose={() => setPwdOpen(false)} title="修改密码" desc="修改后需重新登录" width={460}
+        footer={<><Btn onClick={() => setPwdOpen(false)}>取消</Btn><Btn variant="primary" onClick={() => { setPwdOpen(false); notify('密码已更新'); }}>确认修改</Btn></>}>
+        <div className="form-grid">
+          <Field label="当前密码" required className="span-2"><input className="input" type="password" placeholder="••••••••" /></Field>
+          <Field label="新密码" required className="span-2"><input className="input" type="password" placeholder="至少 8 位" /></Field>
+          <Field label="确认新密码" required className="span-2"><input className="input" type="password" placeholder="再次输入" /></Field>
+        </div>
+      </Modal>
     </div>
   );
 }

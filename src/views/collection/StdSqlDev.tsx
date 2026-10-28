@@ -158,6 +158,10 @@ export function StdSqlWorkbenchPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [extOpen, setExtOpen] = useState(false);
   const [q, setQ] = useState('');
+  const [demoing, setDemoing] = useState(false);
+  const [preOk, setPreOk] = useState(false);
+  const [reviewOk, setReviewOk] = useState(false);
+  const [schedOk, setSchedOk] = useState(false);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -188,6 +192,7 @@ export function StdSqlWorkbenchPage() {
     const blocked = items.some((x) => x.level === '阻断');
     if (!blocked) {
       patchActive({ status: '预检通过', sql });
+      setPreOk(true);
       notify('预检通过，可提交审核');
     } else notify('预检存在阻断项，请先修复', 'error');
     setTab('editor');
@@ -225,26 +230,60 @@ export function StdSqlWorkbenchPage() {
     setChecks(items);
     if (items.some((x) => x.level === '阻断')) { notify('存在阻断项，无法提交审核', 'error'); return; }
     patchActive({ status: '待审核', sql, name });
+    setReviewOk(true);
     notify('已提交人工审核');
     setTab('review');
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('editor');
+    runPrecheck();
+    notify('① SQL 预检通过');
+    await new Promise((r) => setTimeout(r, 450));
+    submitReview();
+    notify('② 已提交审核');
+    await new Promise((r) => setTimeout(r, 400));
+    patchActive({ status: '已调度', sql, name });
+    setSchedOk(true);
+    setSchedOpen(true);
+    notify('③ 审核通过后已可调度 · SQL 可复用');
+    setDemoing(false);
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="STD SQL WORKBENCH"
+        eyebrow="STD SQL WORKBENCH · A3-04"
         title="标化 SQL 工作台"
-        desc="绑定标化任务编写脚本：格式化、预检、跨库转换、模板、临时表、缺项登记、外部程序与调度配置。"
+        desc="验收：预检通过 → 人工审核 → 方可调度；脚本可复用。"
         actions={
           <>
-            <Btn icon="dashboard" onClick={() => go('/collection/std-sql-hub')}>治理总览</Btn>
-            <Btn icon="clipboard" onClick={() => go('/collection/std-tasks')}>任务分派</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="shield" onClick={runPrecheck}>预检</Btn>
             <Btn variant="primary" icon="play" loading={running} onClick={runPreview}>试跑预览</Btn>
           </>
         }
       />
 
+      <div className="qc-accept">
+        {[
+          { n: '01', t: 'SQL 预检', d: '语法·关键字', on: preOk },
+          { n: '02', t: '人工审核', d: '通过后方可调度', on: reviewOk },
+          { n: '03', t: '调度复用', d: 'Cron/依赖可配', on: schedOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {schedOk ? '可调度' : reviewOk ? '待审核' : preOk ? '预检通过' : '草稿'}</span>
+      </div>
+
       <Tabs
+        className="mt-14"
         variant="pill"
         value={tab}
         onChange={setTab}

@@ -85,6 +85,7 @@ export function DataServiceHubPage() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
   const [callBusy, setCallBusy] = useState(false);
+  const [loopDone, setLoopDone] = useState(false);
 
   const catalog = useMemo(() => services.filter((a) =>
     (a.name + a.path + a.category).toLowerCase().includes(q.toLowerCase())
@@ -127,7 +128,9 @@ export function DataServiceHubPage() {
     }, ...a].slice(0, 12));
     setCallBusy(false);
     notify('④ 调用成功并写入审计日志 · 闭环完成');
-    setDemoStep(0);
+    setLoopDone(true);
+    setDemoStep(5);
+    window.setTimeout(() => setDemoStep(0), 1200);
   };
 
   const approve = (id: string, pass: boolean) => {
@@ -149,19 +152,38 @@ export function DataServiceHubPage() {
   return (
     <>
       <PageHeader
-        eyebrow="DATA SERVICE GOVERNANCE"
+        eyebrow="DATA SERVICE GOVERNANCE · A4-08"
         title="数据服务管理"
-        desc="接口发布、第三方认证与密钥、启停、访问统计与调用审计；验收：发布 → 订阅 → 调用 → 审计闭环。"
+        desc="验收：发布 → 订阅 → 调用 → 审计闭环；含第三方认证、密钥、启停与访问统计。"
         actions={
           <>
-            <Btn icon="play" onClick={runClosedLoop} loading={callBusy || demoStep > 0}>闭环演示</Btn>
+            <Btn icon="zap" onClick={runClosedLoop} loading={callBusy || demoStep > 0}>演示验收</Btn>
             <Btn icon="book" onClick={() => notify('开发者文档已打开', 'info')}>开发者文档</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setPublishOpen(true)}>发布服务</Btn>
           </>
         }
       />
 
-      <Card className="mt-0" title="闭环路径" subtitle="一键演示完整链路">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '发布', d: '上架 API', on: demoStep >= 1 || loopDone },
+          { n: '02', t: '订阅', d: '申请审批', on: demoStep >= 2 || loopDone },
+          { n: '03', t: '调用', d: '认证 · 访问', on: demoStep >= 4 || loopDone },
+          { n: '04', t: '审计', d: '日志留痕', on: loopDone },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on || demoStep === Number(s.n) ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {loopDone ? '闭环完成' : demoStep > 0 ? `步骤 ${demoStep}/5` : '待演示'}</span>
+      </div>
+
+      <Card className="mt-14" title="闭环路径" subtitle="一键演示完整链路">
         <div className="svc-loop">
           {[
             { n: 1, t: '发布', d: '上架 API', k: 'publish' as TabKey },
@@ -171,7 +193,7 @@ export function DataServiceHubPage() {
             { n: 5, t: '审计', d: '日志留痕', k: 'audit' as TabKey },
           ].map((s, i) => (
             <React.Fragment key={s.n}>
-              <button type="button" className={`svc-loop-step${demoStep === s.n || tab === s.k ? ' is-on' : ''}`} onClick={() => setTab(s.k)}>
+              <button type="button" className={`svc-loop-step${demoStep === s.n || tab === s.k || (loopDone && s.n === 5) ? ' is-on' : ''}`} onClick={() => setTab(s.k)}>
                 <em>{s.n}</em>
                 <div><strong>{s.t}</strong><small>{s.d}</small></div>
               </button>
@@ -488,7 +510,4 @@ export function DataServiceHubPage() {
   );
 }
 
-/** 兼容原 center/marketplace 入口 */
-export function MarketplacePage() {
-  return <DataServiceHubPage />;
-}
+/** @deprecated 开放门户已迁至 center/OpenPublishHub（B11）；本页保留 A4-08 数据服务管理 */

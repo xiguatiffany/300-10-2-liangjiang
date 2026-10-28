@@ -714,3 +714,74 @@
 }
 .b5-algo-card strong { display: block; font-size: 12px; color: #1e2d4a; margin-bottom: 4px; }
 .b5-algo-card small { font-size: 9.5px; color: #8b98b0; line-height: 1.4; }
+
+/* ── B6 数据资源中心 ─────────────────────────────────────── */
+.rc-three-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rc-three-card {
+  text-align: left; padding: 14px; border-radius: 12px; border: 1px solid #e8eef8;
+  background: #fbfdff; cursor: pointer;
+}
+.rc-three-card:hover, .rc-three-card.is-on { border-color: #c9c0f5; background: #f6f3ff; }
+.rc-three-card.tone-green { border-top: 2.5px solid #059669; }
+.rc-three-card.tone-amber { border-top: 2.5px solid #d97706; }
+.rc-three-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.rc-three-head strong { font-size: 14px; color: #1e2d4a; }
+.rc-three-card > small { display: block; font-size: 9.5px; color: #8b98b0; margin-bottom: 10px; }
+.rc-three-meta { display: flex; gap: 10px; font-size: 10px; color: #4c5d78; margin-bottom: 10px; }
+.rc-three-card > em { display: block; margin-top: 6px; font-style: normal; font-size: 9.5px; color: #8b98b0; }
+
+.rc-query-out {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid #a7f3d0; background: #f0fdf7;
+}
+.rc-query-out > svg { color: #059669; }
+.rc-query-out span { flex: 1; font-size: 11.5px; color: #065f46; }
+
+.rc-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.rc-theme {
+  text-align: left; padding: 12px; border-radius: 10px; border: 1px solid #e8eef8;
+  background: #fbfdff; cursor: pointer;
+}
+.rc-theme:hover { border-color: #c9c0f5; background: #f6f3ff; }
+.rc-theme strong { display: block; font-size: 12px; color: #1e2d4a; margin-bottom: 4px; }
+.rc-theme small { display: block; font-size: 9.5px; color: #8b98b0; margin-bottom: 8px; }
+
+@media (max-width: 900px) {
+  .rc-three-grid, .rc-theme-grid { grid-template-columns: 1fr; }
+}
+
+/* ── B8 指标管理 ─────────────────────────────────────────── */
+.ind-src-list { display: flex; flex-direction: column; gap: 8px; }
+.ind-src-list > div {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid #e8eef8; background: #fbfdff;
+}
+.ind-src-list strong { font-size: 11px; color: #1e2d4a; grid-column: 1; }
+.ind-src-list small { font-size: 9px; color: #8b98b0; grid-column: 1; }
+.ind-src-list .badge { grid-row: 1 / span 2; grid-column: 2; }
+
+.ind-map-list { display: flex; flex-direction: column; gap: 8px; }
+.ind-map-list > div {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid #e8eef8; background: #fbfdff;
+}
+.ind-map-list svg { color: #6755F5; }
+.ind-map-list strong { flex: 1; font-size: 12px; color: #1e2d4a; }
+
+.ind-life-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ind-life-flow > svg { color: #b4c0d6; }
+.ind-life-step {
+  display: flex; flex-direction: column; gap: 2px; min-width: 64px;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid #e8eef8; background: #fbfdff;
+}
+.ind-life-step.is-on { border-color: #ddd6fe; background: #f6f3ff; }
+.ind-life-step em { font-style: normal; font-size: 9px; color: #8b98b0; }
+.ind-life-step strong { font-size: 11.5px; color: #1e2d4a; }
+
+.ind-exec-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.ind-exec {
+  padding: 10px 12px; border-radius: 10px; border: 1px solid #e8eef8; background: #fbfdff;
+  display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center;
+}
+.ind-exec .progress, .ind-exec > div:has(> i), .ind-exec small { grid-column: 1 / -1; }
+.ind-exec small { font-size: 9px; color: #8b98b0; }

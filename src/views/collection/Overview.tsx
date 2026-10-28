@@ -131,6 +131,13 @@ export function CollectionOverview() {
   );
 }
 
+const DAG_NODES = [
+  { id: 'n1', label: '源端抽取', status: '成功' },
+  { id: 'n2', label: '标准化', status: '成功' },
+  { id: 'n3', label: '写入 ODS', status: '运行中' },
+  { id: 'n4', label: '质控抽样', status: '待运行' },
+];
+
 export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONITORING' }: { title?: string; eyebrow?: string; param?: string } = {}) {
   const { go, notify } = useApp();
   const [range, setRange] = useState('1h');
@@ -141,6 +148,8 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
   const [activeTable, setActiveTable] = useState<TableBoardRow | null>(null);
   const [activeNode, setActiveNode] = useState<{ name: string; flow: string; status: string; rows?: string } | null>(null);
   const [layer, setLayer] = useState<'overview' | 'dag' | 'node' | 'log'>('overview');
+  const [demoing, setDemoing] = useState(false);
+  const [visited, setVisited] = useState<Record<'overview' | 'dag' | 'node' | 'log', boolean>>({ overview: true, dag: false, node: false, log: false });
 
   const filteredTasks = useMemo(() => taskBoard.filter((t) =>
     (t.name + t.mode + t.flow).toLowerCase().includes(q.toLowerCase())
@@ -151,9 +160,27 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
     return (t.table + t.layer + t.flow).toLowerCase().includes(q.toLowerCase());
   }), [q, focus]);
 
-  const openDrill = (flow: string, nodeName: string, status: string, rows?: string) => {
+  const openDrill = (flow: string, nodeName: string, status: string, rows?: string, next: 'dag' | 'node' | 'log' = 'node') => {
     setActiveNode({ name: nodeName, flow, status, rows });
-    setLayer('node');
+    setLayer(next);
+    setVisited((v) => ({ ...v, [next]: true, overview: true }));
+  };
+
+  const demoFourLayers = async () => {
+    setDemoing(true);
+    setBoard('overview'); setFocus('sync'); setLayer('overview');
+    setVisited({ overview: true, dag: false, node: false, log: false });
+    notify('① 总览：同步 / 对账 / 指标');
+    await new Promise((r) => setTimeout(r, 500));
+    openDrill('门诊就诊入仓', '写入 ODS', '运行中', '128,642', 'dag');
+    notify('② DAG：查看流程拓扑');
+    await new Promise((r) => setTimeout(r, 700));
+    setLayer('node'); setVisited((v) => ({ ...v, node: true }));
+    notify('③ 节点：写入 ODS · 运行中');
+    await new Promise((r) => setTimeout(r, 700));
+    setLayer('log'); setVisited((v) => ({ ...v, log: true }));
+    notify('④ 日志：总览→DAG→节点→日志 穿透完成');
+    setDemoing(false);
   };
 
   const toneOf = (s: string) => {
@@ -163,24 +190,45 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
     return 'slate';
   };
 
+  const layerLabel = layer === 'overview' ? '① 总览' : layer === 'dag' ? '② DAG' : layer === 'node' ? '③ 节点' : '④ 日志';
+
   return (
     <>
       <PageHeader
-        eyebrow={eyebrow}
+        eyebrow={`${eyebrow} · A4-06 ★`}
         title={title}
-        desc="同步 / 对账 / 指标三张看板；任务看板与表看板可穿透流程图、数据量、异常日志与质控（总览→DAG→节点→日志）。"
+        desc="验收：总览 → DAG → 节点 → 日志四层穿透；同步 / 对账 / 指标三张看板与任务·表看板。"
         actions={
           <>
             <span className="last-refresh"><i /> 最后刷新 14:21:32</span>
-            <Btn icon="workflow" onClick={() => go('/collection/lake-flows')}>打开 DAG</Btn>
+            <Btn icon="play" loading={demoing} onClick={demoFourLayers}>演示四层穿透</Btn>
+            <Btn icon="workflow" onClick={() => { setVisited((v) => ({ ...v, dag: true })); go('/collection/lake-flows'); }}>打开 DAG</Btn>
             <Btn icon="clipboard" onClick={() => go('/collection/tasks')}>任务中心</Btn>
-            <Btn icon="refresh" onClick={() => notify('运行监控数据已刷新')}>刷新</Btn>
-            <Btn variant="primary" icon="settings" onClick={() => notify('监控阈值设置已打开', 'info')}>阈值设置</Btn>
+            <Btn variant="primary" icon="refresh" onClick={() => notify('运行监控数据已刷新')}>刷新</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '总览', d: '同步·对账·指标', k: 'overview' as const },
+          { n: '02', t: 'DAG', d: '流程图拓扑', k: 'dag' as const },
+          { n: '03', t: '节点', d: '状态·数据量', k: 'node' as const },
+          { n: '04', t: '日志', d: '异常可定位', k: 'log' as const },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${layer === s.k || visited[s.k] ? 'is-on' : ''}`}>
+              <em>{s.n}</em>
+              <strong>{s.t}</strong>
+              <small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> 当前 {layerLabel}{visited.log ? ' · 穿透完成' : ''}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="离线成功率" value="99.2" unit="%" delta="今日 1,286 实例" icon="checkcircle" tone="green" onClick={() => setBoard('tasks')} />
         <StatCard label="实时平均 Lag" value="2.4" unit="s" delta="QPS 峰值 1.8k/s" icon="zap" tone="amber" onClick={() => setBoard('tasks')} />
         <StatCard label="对账差异表" value="186" unit="张" delta="一致率 95.0%" icon="list" tone="red" onClick={() => { setBoard('tables'); setFocus('reconcile'); }} />
@@ -225,13 +273,13 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
 
       {board === 'overview' && (
         <>
-          <Card className="mt-14" title="四层穿透演示路径" subtitle="总览 → DAG → 节点 → 日志" actions={<Btn size="sm" variant="primary" icon="play" onClick={() => openDrill('门诊就诊入仓', '写入 ODS', '运行中', '128,642')}>一键演示穿透</Btn>}>
+          <Card className="mt-14" title="四层穿透演示路径" subtitle="总览 → DAG → 节点 → 日志" actions={<Btn size="sm" variant="primary" icon="play" loading={demoing} onClick={demoFourLayers}>一键演示穿透</Btn>}>
             <div className="schema-map" style={{ flexWrap: 'wrap', gap: 8 }}>
               {[
-                ['① 总览指标', () => notify('当前层：总览 · 同步/对账/指标')],
-                ['② 打开流程图', () => go('/collection/lake-flows')],
-                ['③ 查看节点', () => openDrill('检验实时入仓', 'Flink Sink', '运行中', '1.2k/s')],
-                ['④ 运行日志', () => { openDrill('门诊就诊入仓', '增量抽取', '成功', '42,186'); setLayer('log'); }],
+                ['① 总览指标', () => { setLayer('overview'); setVisited((v) => ({ ...v, overview: true })); notify('当前层：总览 · 同步/对账/指标'); }],
+                ['② 打开流程图', () => openDrill('门诊就诊入仓', '写入 ODS', '运行中', '128,642', 'dag')],
+                ['③ 查看节点', () => openDrill('检验实时入仓', 'Flink Sink', '运行中', '1.2k/s', 'node')],
+                ['④ 运行日志', () => openDrill('门诊就诊入仓', '增量抽取', '成功', '42,186', 'log')],
               ].map(([label, fn]) => (
                 <button key={label as string} className="btn btn-secondary btn-sm" onClick={fn as () => void}>{label as string}</button>
               ))}
@@ -371,13 +419,14 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
         open={!!activeNode}
         onClose={() => { setActiveNode(null); setLayer('overview'); }}
         width={720}
-        title={activeNode ? `${layer === 'log' ? '运行日志' : '节点详情'} · ${activeNode.name}` : ''}
-        desc={activeNode ? `流程 ${activeNode.flow} · 层 ${layer === 'log' ? '④ 日志' : '③ 节点'}` : ''}
+        title={activeNode ? `${layer === 'log' ? '运行日志' : layer === 'dag' ? '流程图 DAG' : '节点详情'} · ${activeNode.name}` : ''}
+        desc={activeNode ? `流程 ${activeNode.flow} · 层 ${layerLabel}` : ''}
         footer={
           <>
             <Btn onClick={() => { setActiveNode(null); setLayer('overview'); }}>关闭</Btn>
-            <Btn icon="workflow" onClick={() => go('/collection/lake-flows')}>② 打开 DAG</Btn>
-            {layer !== 'log' && <Btn icon="rows" onClick={() => setLayer('log')}>④ 查看日志</Btn>}
+            {layer !== 'dag' && <Btn icon="workflow" onClick={() => { setLayer('dag'); setVisited((v) => ({ ...v, dag: true })); }}>② DAG</Btn>}
+            {layer !== 'node' && <Btn icon="boxes" onClick={() => { setLayer('node'); setVisited((v) => ({ ...v, node: true })); }}>③ 节点</Btn>}
+            {layer !== 'log' && <Btn icon="rows" onClick={() => { setLayer('log'); setVisited((v) => ({ ...v, log: true })); }}>④ 日志</Btn>}
             <Btn variant="primary" icon="clipboard" onClick={() => go('/collection/tasks')}>任务中心</Btn>
           </>
         }
@@ -385,12 +434,36 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
         {activeNode && (
           <>
             <div className="drawer-summary">
-              <div><span>穿透层</span><strong>{layer === 'log' ? '④ 日志' : '③ 节点'}</strong></div>
+              <div><span>穿透层</span><strong>{layerLabel}</strong></div>
               <div><span>状态</span><strong>{activeNode.status}</strong></div>
               <div><span>数据量</span><strong>{activeNode.rows || '—'}</strong></div>
               <div><span>流程</span><strong>{activeNode.flow}</strong></div>
             </div>
-            {layer === 'log' ? (
+            {layer === 'dag' && (
+              <div className="mt-14">
+                <div className="schema-map" style={{ flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                  {DAG_NODES.map((n, i) => (
+                    <React.Fragment key={n.id}>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${n.label === activeNode.name ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => { setActiveNode({ ...activeNode, name: n.label, status: n.status }); setLayer('node'); setVisited((v) => ({ ...v, node: true })); }}
+                      >
+                        {n.label}
+                        <Badge tone={toneOf(n.status)} soft>{n.status}</Badge>
+                      </button>
+                      {i < DAG_NODES.length - 1 && <Icon name="arrowright" size={12} />}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="info-note mt-14">
+                  <Icon name="workflow" size={13} />
+                  <span>点击节点进入③层详情；也可打开完整 React Flow 画布查看连线与吞吐。</span>
+                  <button className="link-btn" onClick={() => go('/collection/lake-flows')}>完整 DAG</button>
+                </div>
+              </div>
+            )}
+            {layer === 'log' && (
               <div className="log-console">
                 <div><span className="lt">14:20:12</span><span className="li">INFO</span><span>节点 {activeNode.name} 启动 · 流程 {activeNode.flow}</span></div>
                 <div><span className="lt">14:20:13</span><span className="li">INFO</span><span>读取上游依赖与资源配额…</span></div>
@@ -401,10 +474,11 @@ export function RuntimeMonitor({ title = '运行监控', eyebrow = 'RUNTIME MONI
                   <div><span className="lt">14:22:30</span><span className="li ok">SUCCESS</span><span>节点执行完成，质控抽样通过</span></div>
                 )}
               </div>
-            ) : (
+            )}
+            {layer === 'node' && (
               <div className="info-note mt-14">
-                <Icon name="workflow" size={13} />
-                <span>从总览进入节点后，可继续打开完整 React Flow 画布，或下钻到运行日志。</span>
+                <Icon name="boxes" size={13} />
+                <span>节点 {activeNode.name} · 状态 {activeNode.status} · 可上溯 DAG 或下钻运行日志完成四层穿透。</span>
               </div>
             )}
           </>

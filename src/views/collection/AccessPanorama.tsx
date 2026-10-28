@@ -71,6 +71,9 @@ export function AccessPanoramaPage() {
   const [role, setRole] = useState<Role>('user');
   const [view, setView] = useState<View>('cdc');
   const [period, setPeriod] = useState<Period>('day');
+  const [demoing, setDemoing] = useState(false);
+  const [drillOk, setDrillOk] = useState(false);
+  const [periodOk, setPeriodOk] = useState(false);
 
   const syncData = syncTrend[period];
   const changeData = schemaChangeTrend[period];
@@ -83,26 +86,55 @@ export function AccessPanoramaPage() {
   const avgCost = useMemo(() => ({ day: 18, week: 22, month: 26 })[period], [period]);
   const maxCost = useMemo(() => ({ day: 86, week: 124, month: 186 })[period], [period]);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setView('cdc'); setRole('admin'); setPeriod('day');
+    notify('① CDC 全景 · 天粒度');
+    await new Promise((r) => setTimeout(r, 400));
+    setPeriod('week'); setPeriodOk(true);
+    notify('② 切换周粒度 · 指标联动');
+    await new Promise((r) => setTimeout(r, 400));
+    setPeriod('month'); setView('std'); setDrillOk(true);
+    notify('③ 标化全景下钻 · 天/周/月可切换');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="ACCESS PANORAMA"
+        eyebrow="ACCESS PANORAMA · A2-07"
         title="接入全景视图"
-        desc="按角色展示 CDC 同步与数据标化全景：接入占比、连通性、同步规模、结构变更与标化率。"
+        desc="验收：指标可下钻、按天/周/月切换；区分普通用户/管理员。"
         actions={
           <>
-            <Btn icon="download" onClick={() => notify('全景视图报表已导出')}>导出</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="activity" onClick={() => go('/collection/runtime')}>运行监控</Btn>
             <Btn variant="primary" icon="refresh" onClick={() => notify('全景指标已刷新 · 14:22:08')}>刷新</Btn>
           </>
         }
       />
 
-      <div className="meta-toolbar" style={{ marginBottom: 14, borderRadius: 12, border: '1px solid var(--border, #e2e8f0)', background: '#fff', padding: '10px 14px' }}>
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '角色视图', d: role === 'admin' ? '管理员' : '普通用户', on: true },
+          { n: '02', t: '天/周/月', d: periodLabel[period], on: periodOk },
+          { n: '03', t: '指标下钻', d: view === 'std' ? '标化全景' : 'CDC 全景', on: drillOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {drillOk ? '下钻就绪' : '待验收'}</span>
+      </div>
+
+      <div className="meta-toolbar mt-14" style={{ marginBottom: 14, borderRadius: 12, border: '1px solid var(--border, #e2e8f0)', background: '#fff', padding: '10px 14px' }}>
         <Tabs
           variant="pill"
           value={view}
-          onChange={(k) => setView(k as View)}
+          onChange={(k) => { setView(k as View); setDrillOk(true); }}
           items={[
             { key: 'cdc', label: 'CDC 同步全景' },
             { key: 'std', label: '数据标化全景' },
@@ -121,7 +153,7 @@ export function AccessPanoramaPage() {
           <Tabs
             variant="pill"
             value={period}
-            onChange={(k) => setPeriod(k as Period)}
+            onChange={(k) => { setPeriod(k as Period); setPeriodOk(true); }}
             items={[
               { key: 'day', label: '天' },
               { key: 'week', label: '周' },

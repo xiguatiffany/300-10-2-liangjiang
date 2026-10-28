@@ -109,27 +109,67 @@ export function CodeMappingPage() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<CodeScheme | null>(null);
   const [tab, setTab] = useState('list');
+  const [demoing, setDemoing] = useState(false);
+  const [autoOk, setAutoOk] = useState(false);
+  const [manualOk, setManualOk] = useState(false);
+  const [pubOk, setPubOk] = useState(false);
+  const [list, setList] = useState(schemes);
 
-  const rows = useMemo(() => schemes.filter((s) =>
+  const rows = useMemo(() => list.filter((s) =>
     (!status || s.status === status)
     && (!domain || s.domain === domain)
     && (s.name + s.id + s.source + s.stdDict).toLowerCase().includes(q.toLowerCase())
-  ), [q, status, domain]);
+  ), [q, status, domain, list]);
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('list');
+    const draft = list.find((s) => s.status === '草稿') || list[0];
+    setActive(draft); setAutoOk(true);
+    notify('① 自动匹配完成，待人工确认');
+    await new Promise((r) => setTimeout(r, 400));
+    setManualOk(true);
+    notify('② 人工确认映射条目');
+    await new Promise((r) => setTimeout(r, 400));
+    if (draft) {
+      setList((arr) => arr.map((s) => (s.id === draft.id ? { ...s, status: '已发布' } : s)));
+      setActive((a) => (a ? { ...a, status: '已发布' } : a));
+    }
+    setPubOk(true); setTab('reuse');
+    notify('③ 方案已发布，可在标化开发中复用');
+    setDemoing(false);
+  };
 
   return (
     <>
       <PageHeader
-        eyebrow="CODE MAPPING"
+        eyebrow="CODE MAPPING · A3-02"
         title="对码方案管理"
-        desc="引用数据中台值域字典，建立原始编码与标准编码映射；发布后可在标化开发中直接转码复用。"
+        desc="验收：自动匹配 + 人工确认，更新可生效；发布后可复用。"
         actions={
           <>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="download" onClick={() => notify('对码方案清单已导出')}>导出</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新建对码方案</Btn>
           </>
         }
       />
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '自动匹配', d: '原始→标准', on: autoOk },
+          { n: '02', t: '人工确认', d: '可追溯', on: manualOk },
+          { n: '03', t: '发布复用', d: '更新可生效', on: pubOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {pubOk ? '已发布可复用' : manualOk ? '待发布' : '待匹配'}</span>
+      </div>
+      <div className="stat-grid mt-14">
         <StatCard label="对码方案" value={String(schemes.length)} unit="套" delta="已发布 2 套" icon="braces" tone="blue" />
         <StatCard label="映射条目" value="5,458" unit="条" delta="自动匹配 4,920" icon="list" tone="violet" />
         <StatCard label="匹配确认率" value="89.2" unit="%" delta="+3.1% 本周" icon="checkcircle" tone="green" />
@@ -281,35 +321,69 @@ export function StdTasksPage() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<StdTask | null>(null);
   const [exemptOpen, setExemptOpen] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [assignOk, setAssignOk] = useState(false);
+  const [progressOk, setProgressOk] = useState(false);
+  const [taskRows, setTaskRows] = useState(tasks);
 
-  const rows = useMemo(() => tasks.filter((t) =>
+  const rows = useMemo(() => taskRows.filter((t) =>
     (!org || t.org === org)
     && (!status || t.status === status)
     && (t.id + t.table + t.source + t.assignee).toLowerCase().includes(q.toLowerCase())
-  ), [q, org, status]);
+  ), [q, org, status, taskRows]);
 
   const counts = {
-    todo: tasks.filter((t) => t.status === '待接收').length,
-    doing: tasks.filter((t) => t.status === '开发中').length,
-    review: tasks.filter((t) => t.status === '待审核').length,
-    done: tasks.filter((t) => t.status === '已完成').length,
+    todo: taskRows.filter((t) => t.status === '待接收').length,
+    doing: taskRows.filter((t) => t.status === '开发中').length,
+    review: taskRows.filter((t) => t.status === '待审核').length,
+    done: taskRows.filter((t) => t.status === '已完成').length,
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setOrg('重医附二院'); setAssignOk(true);
+    notify('① 按机构分派可见');
+    await new Promise((r) => setTimeout(r, 400));
+    const target = taskRows.find((t) => t.status === '待接收') || taskRows[0];
+    if (target) {
+      setTaskRows((arr) => arr.map((t) => t.id === target.id ? { ...t, status: '开发中', progress: 45 } : t));
+      setActive({ ...target, status: '开发中', progress: 45 });
+    }
+    setProgressOk(true);
+    notify('② 机构任务闭环 · 进度可见');
+    setDemoing(false);
   };
 
   return (
     <>
       <PageHeader
-        eyebrow="STANDARDIZATION TASKS"
+        eyebrow="STANDARDIZATION TASKS · A3-03"
         title="标化任务分派"
-        desc="按机构分派湖仓标化开发任务，支持二级分派；接收方完成 SQL 开发后提交审核与调度。"
+        desc="验收：机构任务闭环与进度可见；支持二级分派与缺项豁免。"
         actions={
           <>
-            <Btn icon="file" onClick={() => setExemptOpen(true)}>业务缺项登记</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="gauge" onClick={() => go('/collection/std-monitor')}>任务监控</Btn>
             <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>分派数据表</Btn>
           </>
         }
       />
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '机构分派', d: '一级/二级', on: assignOk },
+          { n: '02', t: '进度可见', d: '状态闭环', on: progressOk },
+          { n: '03', t: '监控对照', d: '可下钻', on: progressOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {progressOk ? '闭环可见' : '待验收'}</span>
+      </div>
+      <div className="stat-grid mt-14">
         <StatCard label="待接收" value={String(counts.todo)} unit="项" delta="需机构确认" icon="mail" tone="slate" />
         <StatCard label="开发中" value={String(counts.doing)} unit="项" delta="本周新增 3" icon="workflow" tone="blue" />
         <StatCard label="待审核" value={String(counts.review)} unit="项" delta="等待管理员" icon="listfilter" tone="amber" />
@@ -443,6 +517,10 @@ export function StdTaskMonitorPage() {
   const { go, notify } = useApp();
   const [org, setOrg] = useState('');
   const [status, setStatus] = useState('');
+  const [demoing, setDemoing] = useState(false);
+  const [drillOk, setDrillOk] = useState(false);
+  const [logOk, setLogOk] = useState(false);
+  const [activeLog, setActiveLog] = useState<StdTask | null>(null);
 
   const orgStats = [
     { org: '重医附二院', should: 12, running: 3, done: 7, fail: 1, exempt: 1 },
@@ -453,21 +531,47 @@ export function StdTaskMonitorPage() {
 
   const rows = tasks.filter((t) => (!org || t.org === org) && (!status || t.status === status));
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setOrg('重医附二院'); setDrillOk(true);
+    notify('① 机构下钻');
+    await new Promise((r) => setTimeout(r, 400));
+    const fail = tasks.find((t) => t.org === '重医附二院' && (t.status === '已退回' || t.status === '开发中')) || tasks[0];
+    setActiveLog(fail); setLogOk(true);
+    notify('② 日志可下载 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="STANDARDIZATION MONITOR"
+        eyebrow="STANDARDIZATION MONITOR · A3-06"
         title="标化任务监控"
-        desc="按机构统计应执行/执行中/完成/失败任务；支持下钻过程、查看资源消耗与执行日志。"
+        desc="验收：任务可下钻、日志可下载；按机构统计应执行/执行中/完成/失败。"
         actions={
           <>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="list" onClick={() => go('/collection/std-tasks')}>任务分派</Btn>
-            <Btn icon="download" onClick={() => notify('监控报表已导出')}>导出报表</Btn>
-            <Btn variant="primary" icon="refresh" onClick={() => notify('监控指标已刷新')}>刷新</Btn>
+            <Btn variant="primary" icon="download" onClick={() => { setLogOk(true); notify('执行日志包已下载'); }}>下载日志</Btn>
           </>
         }
       />
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '机构统计', d: '应执行分布', on: true },
+          { n: '02', t: '任务下钻', d: org || '点选机构', on: drillOk },
+          { n: '03', t: '日志下载', d: '过程可追溯', on: logOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {logOk ? '日志可下载' : drillOk ? '已下钻' : '待验收'}</span>
+      </div>
+      <div className="stat-grid mt-14">
         <StatCard label="应执行" value="31" unit="项" delta="覆盖 4 家机构" icon="clipboard" tone="blue" />
         <StatCard label="执行中" value="7" unit="项" delta="平均耗时 42 分" icon="activity" tone="cyan" />
         <StatCard label="完成率" value="51.6" unit="%" delta="+6.2% 本周" icon="checkcircle" tone="green" />
@@ -480,7 +584,7 @@ export function StdTaskMonitorPage() {
             <DataTable
               rows={orgStats}
               pageSize={6}
-              onRowClick={(r) => setOrg(r.org)}
+              onRowClick={(r) => { setOrg(r.org); setDrillOk(true); }}
               columns={[
                 { key: 'org', title: '机构', render: (r) => <strong>{r.org}</strong> },
                 { key: 'should', title: '应执行', width: 70, align: 'right', render: (r) => r.should },
@@ -494,7 +598,7 @@ export function StdTaskMonitorPage() {
         </Card>
         <Card title="过程监控筛选" subtitle="时间 / 机构 / 状态">
           <div className="form-grid">
-            <Field label="归属机构"><Select value={org} onChange={setOrg} options={['', '重医附二院', '两江医院', '渝北人民医院', '两江疾控']} placeholder="全部机构" /></Field>
+            <Field label="归属机构"><Select value={org} onChange={(v) => { setOrg(v); if (v) setDrillOk(true); }} options={['', '重医附二院', '两江医院', '渝北人民医院', '两江疾控']} placeholder="全部机构" /></Field>
             <Field label="任务状态"><Select value={status} onChange={setStatus} options={['', '待接收', '开发中', '待审核', '已完成', '已退回', '缺项豁免']} placeholder="全部状态" /></Field>
             <Field label="时间范围" className="span-2"><Select value="近7天" onChange={() => {}} options={['近24小时', '近7天', '近30天', '本季度']} /></Field>
           </div>
@@ -518,7 +622,7 @@ export function StdTaskMonitorPage() {
                 key: 'ops', title: '操作', width: 160,
                 render: (r) => (
                   <div className="row-actions">
-                    <button className="link-btn" onClick={() => notify(`${r.id} 日志已开始下载`)}>下载日志</button>
+                    <button className="link-btn" onClick={() => { setActiveLog(r); setLogOk(true); notify(`${r.id} 日志已开始下载`); }}>下载日志</button>
                     <button className="link-muted" onClick={() => notify(`${r.id} 已标记人工干预`, 'info')}>干预</button>
                   </div>
                 ),
@@ -527,6 +631,25 @@ export function StdTaskMonitorPage() {
           />
         </div>
       </Card>
+
+      <Drawer
+        open={!!activeLog}
+        onClose={() => setActiveLog(null)}
+        width={560}
+        title={activeLog ? `${activeLog.id} · 执行日志` : ''}
+        desc={activeLog ? `${activeLog.org} · ${activeLog.table}` : ''}
+        footer={<><Btn onClick={() => setActiveLog(null)}>关闭</Btn><Btn variant="primary" icon="download" onClick={() => { setLogOk(true); notify('日志包已下载'); }}>下载</Btn></>}
+      >
+        {activeLog && (
+          <pre className="log-console" style={{ whiteSpace: 'pre-wrap' }}>
+{`[INFO] 启动标化任务 ${activeLog.id}
+[INFO] 源表 ${activeLog.source} → ${activeLog.table}
+[INFO] 进度 ${activeLog.progress}% · 状态 ${activeLog.status}
+${(activeLog.logs || ['写入 dwd 完成', '质检抽样通过']).map((l) => `[INFO] ${l}`).join('\n')}
+[SUCCESS] 日志可下载`}
+          </pre>
+        )}
+      </Drawer>
     </>
   );
 }

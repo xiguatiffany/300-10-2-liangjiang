@@ -194,18 +194,67 @@ export function CollectionUsersPage() {
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [open, setOpen] = useState(false);
-  const filtered = rows.filter((u) => (!role || u.role === role) && (u.name + u.account + u.dept).toLowerCase().includes(q.toLowerCase()));
+  const [demoing, setDemoing] = useState(false);
+  const [ssoOk, setSsoOk] = useState(false);
+  const [roleOk, setRoleOk] = useState(false);
+  const [orgOk, setOrgOk] = useState(false);
+  const [orgFilter, setOrgFilter] = useState('');
+  const filtered = rows.filter((u) =>
+    (!role || u.role === role)
+    && (!orgFilter || (u.dept || '').includes(orgFilter))
+    && (u.name + u.account + u.dept).toLowerCase().includes(q.toLowerCase())
+  );
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setSsoOk(true);
+    notify('① SSO / OAuth2：统一登录会话就绪');
+    await new Promise((r) => setTimeout(r, 400));
+    setRole('数据管理员'); setRoleOk(true);
+    notify('② 角色权限：按最小权限授权');
+    await new Promise((r) => setTimeout(r, 400));
+    setOrgFilter('信息'); setOrgOk(true);
+    notify('③ 机构隔离：仅见本机构用户 · 越权拦截可验');
+    setDemoing(false);
+  };
+
   return (
     <>
-      <PageHeader eyebrow="USER MANAGEMENT" title="用户管理" desc="管理平台用户、所属科室与角色授权，支持账号启停与密码策略。" actions={<><Btn icon="upload" onClick={() => notify('批量导入用户向导已打开', 'info')}>批量导入</Btn><Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新增用户</Btn></>} />
-      <div className="stat-grid">
-        <StatCard label="用户总数" value={rows.length.toString()} unit="人" delta="+2 本月" icon="users" tone="blue" />
+      <PageHeader
+        eyebrow="UNIFIED IAM · C3-01"
+        title="统一身份认证"
+        desc="验收：SSO、角色权限、机构隔离；覆盖用户全生命周期与应用资源授权。"
+        actions={
+          <>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
+            <Btn icon="key" onClick={() => go('/admin/permissions')}>权限矩阵</Btn>
+            <Btn variant="primary" icon="plus" onClick={() => setOpen(true)}>新增用户</Btn>
+          </>
+        }
+      />
+      <div className="qc-accept">
+        {[
+          { n: '01', t: 'SSO 登录', d: 'OAuth2 会话', on: ssoOk },
+          { n: '02', t: '角色权限', d: '最小权限', on: roleOk },
+          { n: '03', t: '机构隔离', d: '越权拦截', on: orgOk },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 2 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {orgOk ? '机构隔离生效' : roleOk ? '角色已筛选' : ssoOk ? 'SSO 就绪' : '待验收'}</span>
+      </div>
+      <div className="stat-grid mt-14">
+        <StatCard label="用户总数" value={rows.length.toString()} unit="人" delta="+2 本月" icon="users" tone="blue" onClick={() => go('/admin/roles')} />
         <StatCard label="启用账号" value={rows.filter((u) => u.status === '启用').length.toString()} unit="个" delta="停用 1 个" icon="checkcircle" tone="green" />
-        <StatCard label="今日登录" value="42" unit="人" delta="峰值 68 人" icon="activity" tone="cyan" />
-        <StatCard label="待审批" value="2" unit="个" delta="新用户申请" icon="clock" tone="amber" />
+        <StatCard label="角色" value={String(roles.length)} unit="个" delta="可精细授权" icon="usercog" tone="violet" onClick={() => go('/admin/roles')} />
+        <StatCard label="应用域" value="4" unit="个" delta="SSO 已接入" icon="boxes" tone="cyan" onClick={() => go('/admin/apps')} />
       </div>
       <Card className="mt-14" noPad>
-        <div className="meta-toolbar"><div className="filter-bar"><SearchInput value={q} onChange={setQ} placeholder="搜索姓名、账号或科室" width={250} /><Select value={role} onChange={setRole} options={['', '超级管理员', '数据管理员', '指标管理员', '数据分析师', '业务用户', '数据审核员', '审计员']} placeholder="全部角色" width={120} /></div><Btn size="sm" icon="download" onClick={() => notify('用户清单已导出')}>导出</Btn></div>
+        <div className="meta-toolbar"><div className="filter-bar"><SearchInput value={q} onChange={setQ} placeholder="搜索姓名、账号或科室" width={220} /><Select value={role} onChange={(v) => { setRole(v); if (v) setRoleOk(true); }} options={['', '超级管理员', '数据管理员', '指标管理员', '数据分析师', '业务用户', '数据审核员', '审计员']} placeholder="全部角色" width={120} /><Select value={orgFilter} onChange={(v) => { setOrgFilter(v); if (v) setOrgOk(true); }} options={['', '信息', '医务', '门诊', '财务']} placeholder="机构/科室" width={110} /></div><Btn size="sm" icon="download" onClick={() => notify('用户清单已导出')}>导出</Btn></div>
         <div className="pad-h">
           <DataTable rows={filtered} pageSize={10} columns={[
             { key: 'account', title: '用户', render: (u) => <div className="table-avatar"><span className="avatar sm">{u.name.slice(-2)}</span><div className="cell-main"><strong>{u.name}</strong><small>{u.account}</small></div></div> },

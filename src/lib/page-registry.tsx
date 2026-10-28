@@ -2,7 +2,7 @@ import React from 'react';
 import {
   CenterDashboard, AssetsPage, SourcesPage, QualityOverview, QualityRules, QualityIssues,
   StandardsPage, DomainsPage, SqlPage, DatasetsPage, DevPage, ReportPage, IndicatorsPage, IndicatorDetail,
-  SubscriptionsPage, TagsPage, GraphPage, ModelsPage, MarketplacePage, StandardsManageHubPage, MetadataManageHubPage, MasterDataHubPage, MpiHubPage, QualityControlHubPage,
+  SubscriptionsPage, TagsPage, GraphPage, ModelsPage, MarketplacePage, OpenPublishHubPage, StandardsManageHubPage, MetadataManageHubPage, MasterDataHubPage, MpiHubPage, QualityControlHubPage, ResourceCenterHubPage, TagHubPage, IndicatorHubPage, SelfServiceBIHubPage,
 } from '@/views/CenterPages';
 import {
   CollectionOverview, RuntimeMonitor, AccessPanoramaPage, CdcSyncMonitorPage, ServicesPage, ChannelsPage, OrchestratePage, ConfigsPage, ConfigEditPage,
@@ -18,14 +18,13 @@ import { EntryPage } from '@/views/collection/Entry';
 import { BidHome, DemoIndex } from '@/views/bid/Home';
 import { DataPreview, RealtimeChannel } from '@/views/bid/Collection';
 import { CollectionWizard } from '@/views/bid/CollectionFlow';
-import { IndicatorMarket, TagBoard } from '@/views/bid/Intelligence';
 import { AssetManagement, AssetPublish } from '@/views/bid/Asset';
 import { BidMonitor } from '@/views/bid/Wrappers';
 import { DataQueryPage } from '@/views/bid/DataQuery';
 import { RequirementsPage } from '@/views/bid/Requirements';
 import { DatabasePage } from '@/views/bid/Database';
 import {
-  AdminUsersPage, AdminRolesPage, RoleEditPage, PermissionsPage, AppsPage, DataPermissionsPage, AdminLogsPage, SettingsPage,
+  AdminUsersPage, AdminRolesPage, RoleEditPage, PermissionsPage, AppsPage, DataPermissionsPage, AdminLogsPage, SettingsPage, BizFoundationHubPage, PortalComposerHubPage,
 } from '@/views/AdminPages';
 
 export type PageProps = { param?: string };
@@ -65,6 +64,9 @@ export const pageMap: Record<string, React.ComponentType<PageProps>> = {
   'collection/data-app': DataAppServiceHubPage,
   'bid/data-security': DataSecurityHubPage,
   'collection/data-security': DataSecurityHubPage,
+  'center/data-security': DataSecurityHubPage,
+  'bid/security-center': DataSecurityHubPage,
+  'center/security-center': DataSecurityHubPage,
   'bid/standard-docs': StandardsManageHubPage,
   'collection/standard-docs': StandardsManageHubPage,
   'center/standard-docs': StandardsManageHubPage,
@@ -73,11 +75,21 @@ export const pageMap: Record<string, React.ComponentType<PageProps>> = {
   'center/quality-control': QualityControlHubPage,
   'collection/quality-control': QualityControlHubPage,
   'bid/quality-control': QualityControlHubPage,
+  'center/resource-center': ResourceCenterHubPage,
+  'bid/resource-center': ResourceCenterHubPage,
+  'collection/resource-center': ResourceCenterHubPage,
   'bid/main-archive': MpiHubPage,
   'center/main-archive': MpiHubPage,
   'collection/main-archive': MpiHubPage,
-  'bid/indicator-market': IndicatorMarket,
-  'bid/tag-board': TagBoard,
+  'bid/indicator-market': IndicatorHubPage,
+  'center/indicator-market': IndicatorHubPage,
+  'collection/indicator-market': IndicatorHubPage,
+  'bid/self-bi': SelfServiceBIHubPage,
+  'center/self-bi': SelfServiceBIHubPage,
+  'collection/self-bi': SelfServiceBIHubPage,
+  'bid/tag-board': TagHubPage,
+  'center/tag-board': TagHubPage,
+  'collection/tag-board': TagHubPage,
   'bid/asset-management': AssetManagement,
   'bid/asset-publish': AssetPublish,
   'center/dashboard': CenterDashboard,
@@ -103,7 +115,10 @@ export const pageMap: Record<string, React.ComponentType<PageProps>> = {
   'center/tags': TagsPage,
   'center/graph': GraphPage,
   'center/models': ModelsPage,
-  'center/marketplace': MarketplacePage,
+  'center/marketplace': OpenPublishHubPage,
+  'bid/open-portal': OpenPublishHubPage,
+  'collection/open-portal': OpenPublishHubPage,
+  'bid/marketplace': OpenPublishHubPage,
   'center/indicator': IndicatorDetail,
   'center/dataset': DatasetsPage,
   'collection/overview': CollectionOverview,
@@ -152,4 +167,11 @@ export const pageMap: Record<string, React.ComponentType<PageProps>> = {
   'admin/logs': AdminLogsPage,
   'admin/settings': SettingsPage,
   'admin/role': RoleEditPage,
+  'admin/foundation': BizFoundationHubPage,
+  'bid/biz-foundation': BizFoundationHubPage,
+  'collection/biz-foundation': BizFoundationHubPage,
+  'center/biz-foundation': BizFoundationHubPage,
+  'admin/portal-composer': PortalComposerHubPage,
+  'bid/portal-composer': PortalComposerHubPage,
+  'center/portal-composer': PortalComposerHubPage,
 };

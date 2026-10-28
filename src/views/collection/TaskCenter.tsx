@@ -73,6 +73,8 @@ export function TasksPage() {
   const [activeCycle, setActiveCycle] = useState<CycleTask | null>(null);
   const [activeRt, setActiveRt] = useState<RtTask | null>(null);
   const [backfillOpen, setBackfillOpen] = useState(false);
+  const [demoing, setDemoing] = useState(false);
+  const [opsDone, setOpsDone] = useState<Record<string, boolean>>({ backfill: false, rerun: false, pause: false, stop: false });
 
   const instances = useMemo(() => runTasks.filter((r) =>
     (instStatus === 'all' || r.status === instStatus)
@@ -87,22 +89,59 @@ export function TasksPage() {
     (c.name + c.id + c.owner).toLowerCase().includes(q.toLowerCase())
   ), [q]);
 
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('instance');
+    setOpsDone({ backfill: true, rerun: false, pause: false, stop: false });
+    setBackfillOpen(true);
+    notify('① 补跑：已打开补跑面板');
+    await new Promise((r) => setTimeout(r, 500));
+    setBackfillOpen(false);
+    setOpsDone((o) => ({ ...o, rerun: true }));
+    const fail = runTasks.find((r) => r.status === '失败') || runTasks[0];
+    setActiveInst(fail);
+    notify('② 重跑：失败实例可重跑');
+    await new Promise((r) => setTimeout(r, 400));
+    setTab('realtime');
+    setActiveRt(realtime[0] || null);
+    setOpsDone((o) => ({ ...o, pause: true, stop: true }));
+    notify('③④ 暂停 / 终止可用 · 验收完成');
+    setDemoing(false);
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="TASK OPERATIONS CENTER"
+        eyebrow="TASK OPERATIONS CENTER · A4-05"
         title="任务中心"
-        desc="任务总览、周期任务、执行实例、依赖关系、实时任务与实时实例全生命周期；支持补跑、重跑、暂停、终止。"
+        desc="验收：补跑、重跑、暂停、终止可用；覆盖周期/实时任务与实例全生命周期。"
         actions={
           <>
-            <Btn icon="workflow" onClick={() => go('/collection/lake-flows')}>流程编排</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="activity" onClick={() => go('/bid/monitor')}>★ 监控总览</Btn>
-            <Btn variant="primary" icon="play" onClick={() => setBackfillOpen(true)}>补跑 / 手动执行</Btn>
+            <Btn variant="primary" icon="play" onClick={() => { setOpsDone((o) => ({ ...o, backfill: true })); setBackfillOpen(true); }}>补跑 / 手动执行</Btn>
           </>
         }
       />
 
-      <div className="stat-grid">
+      <div className="qc-accept">
+        {[
+          { n: '01', t: '补跑', d: '手动补数', k: 'backfill' },
+          { n: '02', t: '重跑', d: '失败可重试', k: 'rerun' },
+          { n: '03', t: '暂停', d: '实时可挂起', k: 'pause' },
+          { n: '04', t: '终止', d: '异常可中止', k: 'stop' },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`qc-accept-step ${opsDone[s.k] ? 'is-on' : ''}`}>
+              <em>{s.n}</em><strong>{s.t}</strong><small>{s.d}</small>
+            </div>
+            {i < 3 && <Icon name="arrowright" size={13} />}
+          </React.Fragment>
+        ))}
+        <span className="live-badge"><i /> {Object.values(opsDone).every(Boolean) ? '运维动作齐全' : '待演示运维动作'}</span>
+      </div>
+
+      <div className="stat-grid mt-14">
         <StatCard label="周期任务" value={String(cycles.length)} unit="个" delta={`启用 ${cycles.filter((c) => c.status === '启用').length}`} icon="clock" tone="blue" onClick={() => setTab('cycle')} />
         <StatCard label="今日实例" value="1,286" unit="次" delta="成功率 99.2%" icon="clipboard" tone="green" onClick={() => setTab('instance')} />
         <StatCard label="实时任务" value={String(realtime.length)} unit="条" delta={`运行中 ${realtime.filter((r) => r.status === '运行中').length}`} icon="zap" tone="amber" onClick={() => setTab('realtime')} />

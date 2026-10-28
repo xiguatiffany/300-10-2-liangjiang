@@ -96,6 +96,10 @@ export function DataAppServiceHubPage() {
   const [rateLimit, setRateLimit] = useState('100');
   const [maskOn, setMaskOn] = useState(true);
   const [theme, setTheme] = useState('');
+  const [demoing, setDemoing] = useState(false);
+  const [doneFactory, setDoneFactory] = useState(false);
+  const [doneGovern, setDoneGovern] = useState(false);
+  const [doneInd, setDoneInd] = useState(false);
 
   const filteredApis = useMemo(() => apis.filter((a) =>
     (a.id + a.name + a.path + a.source).toLowerCase().includes(q.toLowerCase())
@@ -172,7 +176,26 @@ export function DataAppServiceHubPage() {
     setLogs((arr) => [log, ...arr]);
     setTestOut(body);
     setTesting(false);
+    if (!deny) setDoneFactory(true);
+    else setDoneGovern(true);
     notify(deny === 'auth' ? '未授权拒绝 · 日志已记录' : deny === 'limit' ? '超限拒绝 · 日志已记录' : `测试通过 · ${activeApi.id} · 日志完整`);
+  };
+
+  const demoAccept = async () => {
+    if (demoing || generating || testing) return;
+    setDemoing(true);
+    await generateApi();
+    await testApi(null);
+    notify('① 零代码生成 API 并测试通过');
+    setTab('govern');
+    await testApi('auth');
+    await testApi('limit');
+    notify('② 未授权/超限拒绝 · 日志完整');
+    setTab('indicator');
+    setActiveInd(indicators[0] || null);
+    setDoneInd(true);
+    notify('③ 监管指标口径与数据来源可追溯');
+    setDemoing(false);
   };
 
   return (
@@ -180,11 +203,10 @@ export function DataAppServiceHubPage() {
       <PageHeader
         eyebrow="DATA APPLICATION SERVICE · A8"
         title="数据应用服务"
-        desc="A8-01 零代码 API 生成/转换/缓存/测试 · A8-02 脱敏·授权·限流·监控 · A8-03 综合监管指标（T+1）可追溯。"
+        desc="验收：零代码生成并测试 → 未授权/超限拒绝+日志 → 监管指标可追溯。"
         actions={
           <>
-            <Btn icon="store" onClick={() => go('/center/marketplace')}>开放集市</Btn>
-            <Btn icon="chart" onClick={() => go('/bid/indicator-market')}>指标市场</Btn>
+            <Btn icon="zap" loading={demoing || generating || testing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="play" loading={testing} onClick={() => testApi(null)} disabled={!activeApi}>在线测试</Btn>
             <Btn variant="primary" icon="sparkles" loading={generating} onClick={generateApi}>零代码生成 API</Btn>
           </>
@@ -193,12 +215,12 @@ export function DataAppServiceHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: 'API 工厂', d: '生成·转换·缓存·测试' },
-          { n: '02', t: '服务治理', d: '脱敏·授权·限流·日志' },
-          { n: '03', t: '监管指标', d: '口径与来源可追溯' },
+          { n: '01', t: 'API 工厂', d: '生成·转换·缓存·测试', on: doneFactory || tab === 'factory' },
+          { n: '02', t: '服务治理', d: '脱敏·授权·限流·日志', on: doneGovern || tab === 'govern' },
+          { n: '03', t: '监管指标', d: '口径与来源可追溯', on: doneInd || tab === 'indicator' },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'factory' : i === 1 ? 'govern' : 'indicator') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${s.on ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -206,7 +228,7 @@ export function DataAppServiceHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 已发布 {published} · 拦截 {denyAuth + denyLimit}</span>
+        <span className="live-badge"><i /> {doneInd ? '指标可追溯' : doneGovern ? '治理拦截就绪' : doneFactory ? 'API 已测通' : `已发布 ${published} · 拦截 ${denyAuth + denyLimit}`}</span>
       </div>
 
       <div className="stat-grid mt-14">

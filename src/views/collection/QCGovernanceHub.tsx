@@ -74,6 +74,8 @@ const toneOf = (s: string) => {
   return 'slate';
 };
 
+type AcceptPhase = 'loop' | 'knowledge' | 'screen';
+
 /** A5-07 ★ 问题管理 / 知识库 / 治理大屏 */
 export function QCGovernanceHubPage() {
   const { go, notify } = useApp();
@@ -96,6 +98,11 @@ export function QCGovernanceHubPage() {
 
   const [screenFocus, setScreenFocus] = useState<string>('W01');
   const [pushing, setPushing] = useState(false);
+  const [phase, setPhase] = useState<AcceptPhase>('loop');
+  const [looped, setLooped] = useState(false);
+  const [kbDone, setKbDone] = useState(false);
+  const [screenDone, setScreenDone] = useState(false);
+  const [demoing, setDemoing] = useState(false);
 
   const filteredIssues = useMemo(() => issues.filter((i) =>
     (!cat || i.category === cat)
@@ -134,11 +141,13 @@ export function QCGovernanceHubPage() {
 
   const adoptToQc = (id: string) => {
     setRules((arr) => arr.map((r) => (r.id === id ? { ...r, status: '已用于质控' } : r)));
+    setPhase('knowledge'); setKbDone(true); setTab('knowledge');
     notify(`${id} 已写入质控规则库并挂到流程编排`);
   };
 
   const closeLoop = (id: string) => {
     setIssues((arr) => arr.map((i) => (i.id === id ? { ...i, status: '已闭环' } : i)));
+    setPhase('loop'); setLooped(true);
     notify(`${id} 已闭环 · 通知已回执`);
     setActive(null);
   };
@@ -154,6 +163,7 @@ export function QCGovernanceHubPage() {
   const pushDigest = async () => {
     setPushing(true);
     setTab('screen');
+    setPhase('screen'); setScreenDone(true);
     await new Promise((r) => setTimeout(r, 700));
     setPushing(false);
     notify('治理日报已推送：企微 42 人 · 站内信 18 人 · 短信 6 人');
@@ -168,7 +178,25 @@ export function QCGovernanceHubPage() {
     ]);
     setNewRuleOpen(false);
     setNewRuleText('');
+    setPhase('knowledge'); setKbDone(true); setTab('knowledge');
     notify(`${id} 已新增，可一键用于质控`);
+  };
+
+  const demoAccept = async () => {
+    setDemoing(true);
+    setTab('issues'); setPhase('loop');
+    const open = issues.find((i) => i.status !== '已闭环') || issues[0];
+    if (open) closeLoop(open.id);
+    notify('① 问题闭环完成');
+    await new Promise((r) => setTimeout(r, 450));
+    setTab('knowledge'); setPhase('knowledge');
+    const candidate = rules.find((r) => r.status !== '已用于质控') || rules[0];
+    if (candidate) adoptToQc(candidate.id);
+    notify('② 知识库规则已用于质控');
+    await new Promise((r) => setTimeout(r, 450));
+    setTab('screen'); setScreenFocus('W01'); setPhase('screen'); setScreenDone(true);
+    notify('③ 治理大屏 13 类组件可演示');
+    setDemoing(false);
   };
 
   const docRows = useMemo(() => docs.filter((d) =>
@@ -178,13 +206,12 @@ export function QCGovernanceHubPage() {
   return (
     <>
       <PageHeader
-        eyebrow="QC GOVERNANCE · A5-07"
+        eyebrow="QC GOVERNANCE · A5-07 ★"
         title="问题管理 / 知识库 / 治理大屏"
-        desc="问题汇聚与处置闭环 · 质控知识库新增规则并用于质控 · 治理大屏 13 类组件可演示。"
+        desc="验收：问题闭环 → 知识库规则用于质控 → 治理大屏 13 类组件可演示。"
         actions={
           <>
-            <Btn icon="shield" onClick={() => go('/collection/qc-results')}>★ 结果统计</Btn>
-            <Btn icon="workflow" onClick={() => go('/collection/qc-designer')}>★ 质控流程</Btn>
+            <Btn icon="zap" loading={demoing} onClick={demoAccept}>演示验收</Btn>
             <Btn icon="sparkles" loading={extracting} onClick={extract}>AI 规则抽取</Btn>
             <Btn variant="primary" icon="bell" loading={pushing} onClick={pushDigest}>推送治理日报</Btn>
           </>
@@ -193,12 +220,12 @@ export function QCGovernanceHubPage() {
 
       <div className="qc-accept">
         {[
-          { n: '01', t: '问题闭环', d: '汇聚 · 分派 · 复核 · 闭环' },
-          { n: '02', t: '知识库规则', d: '新增并用于质控' },
-          { n: '03', t: '治理大屏', d: '13 类组件可演示' },
+          { n: '01', t: '问题闭环', d: '汇聚 · 分派 · 闭环', k: 'loop' as const, on: looped },
+          { n: '02', t: '知识库规则', d: '新增并用于质控', k: 'knowledge' as const, on: kbDone || usedInQc > 0 },
+          { n: '03', t: '治理大屏', d: '13 类组件可演示', k: 'screen' as const, on: screenDone },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
-            <div className={`qc-accept-step ${tab === (i === 0 ? 'issues' : i === 1 ? 'knowledge' : 'screen') ? 'is-on' : ''}`}>
+            <div className={`qc-accept-step ${phase === s.k || s.on || tab === (s.k === 'loop' ? 'issues' : s.k === 'knowledge' ? 'knowledge' : 'screen') ? 'is-on' : ''}`}>
               <em>{s.n}</em>
               <strong>{s.t}</strong>
               <small>{s.d}</small>
@@ -206,7 +233,7 @@ export function QCGovernanceHubPage() {
             {i < 2 && <Icon name="arrowright" size={13} />}
           </React.Fragment>
         ))}
-        <span className="live-badge"><i /> 知识规则用于质控 {usedInQc} 条</span>
+        <span className="live-badge"><i /> {screenDone ? '大屏已演示' : kbDone ? '规则已用于质控' : looped ? '问题已闭环' : `知识规则用于质控 ${usedInQc} 条`}</span>
       </div>
 
       <div className="stat-grid mt-14">
